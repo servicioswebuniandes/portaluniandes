@@ -1,0 +1,112 @@
+<?php
+
+function categorias_publicaciones_form_alter(&$form, &$form_state, $form_id) {
+
+
+
+  if($form_id == 'publicaciones_node_form'){
+
+    if (empty($form['nid']['#value'])) {
+      
+    $categoria_activa=variable_get('taxonomy');
+    $term_active=taxonomy_term_load($categoria_activa);
+    $term = i18n_taxonomy_term_get_translation($term_active, "en");
+    if ($form['language']['#value']=='en') {
+      $final=array('_none' => "- Ninguno -",
+        $term->tid => $term->name );
+
+  }else{
+    $final=array('_none' => "- Ninguno -",
+      $term_active->tid => $term_active->name );
+  }
+
+  $form['field_categoria_a_la_que_pertene']['und']['#options']=$final;
+  }
+}
+
+
+}
+function categorias_publicaciones_menu() {
+  $items = array();
+
+  $items['admin/config/content/categorias_publicaciones'] = array(
+    'title' => t('Configuración de la categoría actual'),
+    'description' => t('Selecciona la categoría que se mostrará en el sitio'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('categorias_publicaciones_admin'),
+    'access arguments' => array('administer site configuration'),
+    );
+
+  return $items;
+}
+
+
+function categorias_publicaciones_obtener_taxonomias(){
+
+  $vocabulary = taxonomy_vocabulary_machine_name_load('categorias_publicaciones');  
+  $terms = entity_load('taxonomy_term', FALSE, array('vid' => $vocabulary->vid));
+  $taxonomy=array();
+
+
+  //die();
+  $lista=array();
+  foreach ($terms as $key) {
+    $lista[$key->tid]=$key->name;
+  }
+
+  return $lista;
+}
+
+
+function categorias_publicaciones_taxonomy_term_presave($term) {
+
+  if ($term->vocabulary_machine_name=="categorias_publicaciones" && $term->field_categoria_activa['und'][0]['value']==1) {  
+
+    $myvoc = taxonomy_vocabulary_machine_name_load("categorias_publicaciones");
+    $tree = taxonomy_get_tree($myvoc->vid);
+    foreach ($tree as $term_load) { 
+
+      if ($term_load->tid != $term->tid) {
+        $term_load->field_categoria_activa['und'][0]['value']=0;    
+        taxonomy_term_save($term_load);  
+      }
+
+    }
+
+
+  }
+
+
+}
+
+function categorias_publicaciones_taxonomy_term_insert($term) {
+if ($term->vocabulary_machine_name=="categorias_publicaciones" && $term->field_categoria_activa['und'][0]['value']==1) {  
+variable_set('taxonomy',$term->tid);
+print("guarda".$term->tid);
+}
+
+
+}
+
+function categorias_publicaciones_admin() {
+
+
+  $form = array();
+
+  $taxonomias=categorias_publicaciones_obtener_taxonomias();
+
+  $form['taxonomy_group']['taxonomy'] = array(
+    '#title' => t('Categoria a mostrar'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('taxonomy', "Seleccione la categoría que se cargara"),
+    '#options' => $taxonomias,
+    '#required' => TRUE
+    );
+
+
+
+  return system_settings_form($form);
+}
+
+
+

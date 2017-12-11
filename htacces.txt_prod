@@ -1,0 +1,956 @@
+#
+# Apache/PHP/Drupal settings:
+#
+
+# Protect files and directories from prying eyes.
+<FilesMatch "\.(engine|inc|info|install|make|module|profile|test|po|sh|\.txt|.*sql|theme|tpl(\.php)?|xtmpl)(~|\.sw[op]|\.bak|\.orig|\.save)?$|^(\..*|Entries.*|Repository|Root|Tag|Template|composer\.(json|lock))$|^#.*#$|\.php(~|\.sw[op]|\.bak|\.orig\.save)$">
+  Order allow,deny
+</FilesMatch>
+
+
+# Don't show directory listings for URLs which map to a directory.
+Options -Indexes
+
+# Follow symbolic links in this directory.
+Options +FollowSymLinks
+
+# Make Drupal handle any 404 errors.
+ErrorDocument 404 /index.php
+
+# Set the default handler.
+DirectoryIndex index.php index.html index.htm
+
+# Override PHP settings that cannot be changed at runtime. See
+# sites/default/default.settings.php and drupal_environment_initialize() in
+# includes/bootstrap.inc for settings that can be changed at runtime.
+
+# PHP 5, Apache 1 and 2.
+<IfModule mod_php5.c>
+  php_flag magic_quotes_gpc                 off
+  php_flag magic_quotes_sybase              off
+  php_flag register_globals                 off
+  php_flag session.auto_start               off
+  php_value mbstring.http_input             pass
+  php_value mbstring.http_output            pass
+  php_value session.cookie_httponly 1
+  php_value session.cookie_secure 1
+  php_flag mbstring.encoding_translation    off
+</IfModule>
+
+# Requires mod_expires to be enabled.
+<IfModule mod_expires.c>
+  # Enable expirations.
+  ExpiresActive On
+
+  # Cache all files for 2 weeks after access (A).
+  ExpiresDefault A1209600
+
+  <FilesMatch \.php$>
+    # Do not allow PHP scripts to be cached unless they explicitly send cache
+    # headers themselves. Otherwise all scripts would have to overwrite the
+    # headers set by mod_expires if they want another caching behavior. This may
+    # fail if an error occurs early in the bootstrap process, and it may cause
+    # problems if a non-Drupal PHP file is installed in a subdirectory.
+    ExpiresActive Off
+  </FilesMatch>
+  
+</IfModule>
+
+# Various rewrite rules.
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+	RewriteCond %{REQUEST_URI} !/robots\.txt$ [nocase]
+	RewriteRule \.txt$  -  [forbidden,last]
+
+  # Set "protossl" to "s" if we were accessed via https://.  This is used later
+  # if you enable "www." stripping or enforcement, in order to ensure that
+  # you don't bounce between http and https.
+  RewriteRule ^ - [E=protossl]
+  RewriteCond %{REQUEST_METHOD} ^TRACE
+  RewriteRule ^ - [F]
+
+  # Make sure Authorization HTTP header is available to PHP
+  # even when running as CGI or FastCGI.
+  RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Block access to "hidden" directories whose names begin with a period. This
+  # includes directories used by version control systems such as Subversion or
+  # Git to store control files. Files whose names begin with a period, as well
+  # as the control files used by CVS, are protected by the FilesMatch directive
+  # above.
+  #
+  # NOTE: This only works when mod_rewrite is loaded. Without mod_rewrite, it is
+  # not possible to block access to entire directories from .htaccess, because
+  # <DirectoryMatch> is not allowed here.
+  #
+  # If you do not have mod_rewrite installed, you should remove these
+  # directories from your webroot or otherwise protect them from being
+  # downloaded.
+  RewriteRule "(^|/)\." - [F]
+
+  # If your site can be accessed both with and without the 'www.' prefix, you
+  # can use one of the following settings to redirect users to your preferred
+  # URL, either WITH or WITHOUT the 'www.' prefix. Choose ONLY one option:
+  #
+  # To redirect all users to access the site WITH the 'www.' prefix,
+  # (http://example.com/... will be redirected to http://www.example.com/...)
+  # uncomment the following:
+  # RewriteCond %{HTTP_HOST} .
+  # RewriteCond %{HTTP_HOST} !^www\. [NC]
+  # RewriteRule ^ http%{ENV:protossl}://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  #
+  # To redirect all users to access the site WITHOUT the 'www.' prefix,
+  # (http://www.example.com/... will be redirected to http://example.com/...)
+  # uncomment the following:
+  # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  # RewriteRule ^ http%{ENV:protossl}://%1%{REQUEST_URI} [L,R=301]
+
+  # Modify the RewriteBase if you are using Drupal in a subdirectory or in a
+  # VirtualDocumentRoot and the rewrite rules are not working properly.
+  # For example if your site is at http://example.com/drupal uncomment and
+  # modify the following line:
+  # RewriteBase /drupal
+  #
+  # If your site is running in a VirtualDocumentRoot at http://example.com/,
+  # uncomment the following line:
+  # RewriteBase /
+
+  # Pass all requests not referring directly to files in the filesystem to
+  # index.php. Clean URLs are handled in drupal_environment_initialize().
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !=/favicon.ico
+  RewriteRule ^ index.php [L]
+
+  # Rules to correctly serve gzip compressed CSS and JS files.
+  # Requires both mod_rewrite and mod_headers to be enabled.
+  <IfModule mod_headers.c>
+    # Serve gzip compressed CSS files if they exist and the client accepts gzip.
+    RewriteCond %{HTTP:Accept-encoding} gzip
+    RewriteCond %{REQUEST_FILENAME}\.gz -s
+    RewriteRule ^(.*)\.css $1\.css\.gz [QSA]
+
+    # Serve gzip compressed JS files if they exist and the client accepts gzip.
+    RewriteCond %{HTTP:Accept-encoding} gzip
+    RewriteCond %{REQUEST_FILENAME}\.gz -s
+    RewriteRule ^(.*)\.js $1\.js\.gz [QSA]
+
+    # Serve correct content types, and prevent mod_deflate double gzip.
+    RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1]
+    RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1]
+
+    <FilesMatch "(\.js\.gz|\.css\.gz)$">
+      # Serve correct encoding type.
+      Header set Content-Encoding gzip
+      # Force proxies to cache gzipped & non-gzipped css/js files separately.
+      Header append Vary Accept-Encoding
+    </FilesMatch>
+  </IfModule>
+</IfModule>
+
+# Add headers to all responses.
+<IfModule mod_headers.c>
+  # Disable content sniffing, since it's an attack vector.
+  Header always set X-Content-Type-Options nosniff
+  Header set X-FRAME-OPTIONS "SAMEORIGIN"
+
+  # Turn on IE8-IE9 XSS prevention tools
+  Header set X-XSS-Protection "1; mode=block"
+
+  # Only allow JavaScript from the same domain to be run.
+  # Don't allow inline JavaScript to run.
+  Header set X-Content-Security-Policy "allow 'self';"
+</IfModule>
+
+# Permanent URL redirect
+Redirect	301	/institucional/informacion-general/la-universidad	/es/universidad/
+Redirect	301	/institucional/guia/141-reglamento-de-estudiantes-gs	/es/soy/convivencia/reglamento-estudiantes/
+Redirect	301	/institucional/informacion-general/historia	/es/universidad/informacion-general/historia/
+Redirect	301	/institucional/informacion-general/rectoria	/es/universidad/informacion-general/rectoria/
+Redirect	301	/institucional/informacion-general/gobierno-de-uniandes	/es/universidad/informacion-general/gobierno-uniandes/
+Redirect	301	/institucional/informacion-general/nuestros-simbolos	/es/universidad/informacion-general/nuestros-simbolos/
+Redirect	301	/institucional/informacion-general/identidad-institucional	/es/universidad/informacion-general/identidad-institucional/
+Redirect	301	/institucional/informacion-general/estructura-organizacional	/es/universidad/informacion-general/estructura-organizacional/
+Redirect	301	/institucional/informacion-general/directivos	/es/universidad/informacion-general/directivos/
+Redirect	301	/institucional/informacion-general/directorio-de-redes-sociales	/es/universidad/informacion-general/redes-sociales/
+Redirect	301	/noticias-especiales-interno/45-e-informacion-general/765-acerca-de-uniandes	/sites/default/files/asset/document/Acerca-de-uniandes_0.pdf
+Redirect	301	/institucional/ique-nos-diferencia/nuestros-profesores	/es/universidad/que-nos-diferencia/nuestros-profesores/
+Redirect	301	/institucional/ique-nos-diferencia/flexibilidad-curricular	/es/universidad/que-nos-diferencia/flexibidad-curricular/
+Redirect	301	/institucional/ique-nos-diferencia/acreditaciones	/es/universidad/ranking-acreditacion/
+Redirect	301	/institucional/apoyo-financiero/apoyo-financiero	/es/universidad/que-nos-diferencia/apoyo-financiero/
+Redirect	301	/institucional/ique-nos-diferencia/convenios-y-alianzas	/es/universidad/que-nos-diferencia/convenios-alianzas/
+Redirect	301	/institucional/ique-nos-diferencia/investigacion	https://investigaciones.uniandes.edu.co/es/
+Redirect	301	/institucional/informacion-general/estrategia-2016-2020	/es/universidad/estrategia-2016-2020/
+Redirect	301	/institucional/recursos/recursos	/es/universidad/recursos/
+Redirect	301	/institucional/recursos/laboratorios	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/recursos/facultad-de-ciencias-sociales	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/recursos/laboratorios-facultad-de-arquitectura-y-diseno	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/recursos/facultad-de-artes-y-humanidades	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/recursos/laboratorios-facultad-de-ciencias	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/recursos/laboratorios-facultad-de-ingenieria	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/recursos/laboratorios-facultad-de-medicina	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/informacion-general/laboratorios-vicerrectoria-de-investigaciones	/es/universidad/recursos/laboratorios/
+Redirect	301	/institucional/facultades/facultades	/es/programas-facultades/
+Redirect	301	/institucional/facultades/listado-de-facultades	/es/programas-facultades/lista-facultades/
+Redirect	301	/institucional/facultades/listado-de-departamentos	/es/programas-facultades/lista-departamentos/
+Redirect	301	/institucional/recursos/informatica	/es/universidad/recursos/informatica/
+Redirect	301	/institucional/informacion-para/aspirantes-a-pregrado	/es/soy/aspirante/pregrado/
+Redirect	301	/institucional/informacion-para/posgrado	/es/soy/aspirante/
+Redirect	301	/institucional/informacion-para/aspirantes-a-otros-programas	/es/soy/aspirante/otros-programas
+Redirect	301	/institucional/informacion-para/estudiantes	/es/soy/estudiante/
+Redirect	301	/institucional/informacion-para/profesores	/es/soy/profesor/
+Redirect	301	/institucional/informacion-para/administrativos	/es/soy/administrativo/
+Redirect	301	/institucional/informacion-para/empresas-y-organizaciones	/es/soy/empresas-organizaciones/
+Redirect	301	/institucional/programas/programas	/es/programas-facultades/programas/
+Redirect	301	/institucional/admisiones/programas-de-pregrado	/es/programas-facultades/programas/pregrados/
+Redirect	301	/institucional/admisiones/programas-de-maestria	/es/programas-facultades/programas/maestria/
+Redirect	301	/institucional/programas/programas-de-doctorado	/es/programas-facultades/programas/doctorado/
+Redirect	301	/institucional/admisiones/programas-especializacion	/es/programas-facultades/programas/especializacion/
+Redirect	301	/institucional/informacion-para/aspirantes-a-otros-programas	/es/programas-facultades/programas/otros-programas/
+Redirect	301	/institucional/apoyo-financiero/apoyo-financiero	/es/admisiones-y-apoyo-financiero/apoyo-financiero/
+Redirect	301	/noticias-especiales-interno/54-e-donaciones-apoyo-financiero/1349-quieroestudiar	http://donaciones.uniandes.edu.co/s/1384/25/social.aspx?sid=1384&gi%20d=25&pgid=787
+Redirect	301	/institucional/apoyo-financiero/otros-programas-de-apoyo	/es/admisiones-apoyo-financiero/apoyo-financiero/otros-programas-de-apoyo/
+Redirect	301	/institucional/admisiones/admisiones	/es/admisiones-y-apoyo-financiero/admisiones-y-registro/
+Redirect	301	/institucional/admisiones/programas-de-pregrado	/es/soy/aspirante/pregrado/
+Redirect	301	/institucional/admisiones/programas-de-maestria	/es/soy/aspirante/maestria/
+Redirect	301	/institucional/programas/programas-de-doctorado	/es/soy/aspirante/doctorado/
+Redirect	301	/institucional/admisiones/programas-especializacion	/es/soy/aspirante/especializacion/
+			
+RedirectMatch	301	/institucional/guia/11-admisiones-y-registro-gs(.*)	/es/soy/vida-academica/admisiones-registro/
+Redirect	301	/institucional/guia/111-banner-matriculas-calendario-y-horario-gs	/es/soy/admisiones-registro/matriculas-calendario-academico-horarios/
+Redirect	301	/institucional/guia/112-certificado-de-estudios-y-notas-gs	/es/soy/admisiones-registro/certificados/
+RedirectMatch	301	/institucional/guia/12-apoyo-academico-gs(.*)	/es/soy/vida-academica/apoyo-academico/
+RedirectMatch	301	/institucional/guia/13-consejeria-gs(.*)	/es/soy/vida-academica/consejeria/
+RedirectMatch	301	/institucional/guia/14-convivencia-gs(.*)	/es/soy/vida-academica/convivencia/
+Redirect	301	/institucional/guia/141-reglamento-de-estudiantes-gs	/es/soy/convivencia/reglamento-estudiantes/
+Redirect	301	/institucional/guia/142-ombudsperson-gs	/es/soy/convivencia/ombudsperson/
+Redirect	301	/institucional/guia/143-comite-de-mejores-practicas-gs	/es/soy/convivencia/comite-mejores-practicas/
+RedirectMatch	301	/institucional/guia/15-innovacion-y-emprendimiento-gs(.*)	/es/soy/vida-academica/innovacion-emprendimiento/
+Redirect	301	/institucional/guia/151-conecta-te-gs	/es/soy/innovacion-emprendimiento/conecta-te/
+Redirect	301	/institucional/guia/152-innovandes-gs	/es/soy/innovacion-emprendimiento/innovandes/
+Redirect	301	/institucional/guia/153-centro-de-emprendimiento-gs	/es/soy/innovacion-emprendimiento/centro-emprendimiento/
+RedirectMatch	301	/institucional/guia/16-intercambios-gs(.*)	/es/soy/vida-academica/intercambios/
+RedirectMatch	301	/institucional/guia/17-oportunidades-para-la-vida-laboral-gs(.*)	/es/soy/vida-academica/oportunidades-vida-laboral/
+Redirect	301	/institucional/guia/171-desarrollo-y-practicas-profesionales-gs	/es/soy/oportunidades-vida-laboral/practicas-profesionales/
+Redirect	301	/institucional/guia/172-practica-social-gs	/es/soy/oportunidades-vida-laboral/practica-social/
+Redirect	301	/institucional/guia/173-monitorias-y-labores-ocasionales-gs	/es/soy/oportunidades-vida-laboral/monitorias-labores-ocasionales/
+RedirectMatch	301	/institucional/guia/18-sistema-de-bibliotecas-gs(.*)	/es/soy/vida-academica/bibliotecas/
+Redirect	301	/institucional/guia/181-biblioteca-general-ramon-de-zubiria-gs	/es/soy/bibliotecas/biblioteca-general-ramon-de-zubiria/
+Redirect	301	/institucional/guia/182-bibliotecas-satelites-gs	/es/soy/bibliotecas/bibliotecas-satelitales/
+Redirect	301	/institucional/guia/183-servicios-gs	/es/soy/bibliotecas/sistema-bibliotecas/
+Redirect	301	/institucional/guia/1831-servicios-en-linea	/es/es/soy/bibliotecas/en-linea/
+Redirect	301	/institucional/guia/1832-consulta-en-sala-gs	/es/soy/bibliotecas/consulta-sala/
+RedirectMatch	301	/institucional/guia/21-apoyo-financiero-gs(.*)	/soy/vida-universitaria/apoyo-financiero/
+RedirectMatch	301	/institucional/guia/22-participacion-gs(.*)	/soy/vida-universitaria/participacion/
+Redirect	301	/institucional/guia/221-circulos-de-participacion-gs	/soy/participacion/circulos-participacion/
+Redirect	301	/institucional/guia/222-consejo-estudiantil-uniandino-ceu-gs	/soy/participacion/ceu/
+Redirect	301	/institucional/guia/223-grupo-andar-gs	/soy/participacion/grupo-andar/
+RedirectMatch	301	/institucional/guia/23-cultura-gs(.*)	/soy/vida-universitaria/cultura/
+RedirectMatch	301	/institucional/guia/24-deportes-gs(.*)	/es/soy/vida-universitaria/deportes/
+RedirectMatch	301	/institucional/guia/25-medios-de-comunicacion-gs(.*)	/es/soy/vida-universitaria/medios-comunicacion/
+Redirect	301	/noticias-especiales-interno/77-e-guia/2765-3-servicios-gs	/es/soy/guia-servicios/
+RedirectMatch	301	/institucional/guia/31-emergencias-gs(.*)	/es/soy/servicios/emergencias/
+Redirect	301	/institucional/guia/311-comite-y-brigada-de-emergencias-y-lideres-de-evacuacion-gs	/es/soy/emergencias/brigada-emergencia-lideres-evacuacion/
+Redirect	301	/institucional/guia/312-icomo-reportar-una-emergencia-gs	/es/soy/emergencias/como-reportar-emergencia/
+Redirect	301	/institucional/guia/313-alarmas-y-recursos-gs	/es/soy/emergencias/alarmas-recursos/
+Redirect	301	/institucional/guia/314-ique-hacer-en-caso-de-gs	/es/soy/emergencias/que-hacer/
+RedirectMatch	301	/institucional/guia/32-libros-y-documentos-gs(.*)	/es/soy/servicios/libros-documentos/
+Redirect	301	/institucional/guia/321-libreria-uniandes-gs	/es/soy/libros-documentos/libreria-uniandes/
+Redirect	301	/institucional/guia/322-administracion-documental-gs	/es/soy/libros-documentos/administracion-documental/
+Redirect	301	/institucional/guia/323-ediciones-uniandes-gs	/es/soy/libros-documentos/ediciones-uniandes/
+RedirectMatch	301	/institucional/guia/34-restaurantes-y-puntos-de-comida-gs(.*)	/es/soy/servicios/puntos-comida/
+Redirect	301	/institucional/guia/341-restaurantes-y-cafeterias-gs	/es/soy/puntos-comida/restaurantes-cafeterias/
+Redirect	301	/institucional/guia/342-puntos-de-hornos-microondas-gs	/es/soy/puntos-comida/puntos-hornos-microondas/
+Redirect	301	/institucional/guia/343-puntos-de-maquinas-dispensadoras-gs	/es/soy/puntos-comida/puntos-maquinas-dispensadoras/
+RedirectMatch	301	/institucional/guia/35-salud-gs(.*)	/es/soy/servicios/salud/
+RedirectMatch	301	/institucional/guia/36-seguridad-gs(.*)	/es/soy/servicios/seguridad/
+Redirect	301	/institucional/guia/361-porterias-gs	/es/soy/seguridad/porterias/
+Redirect	301	/institucional/guia/362-carnetizacion-gs	/es/soy/seguridad/carnetizacion/
+Redirect	301	/institucional/guia/363-oficina-de-objetos-recuperados-gs	/es/soy/seguridad/oficina-objetos-recuperados/
+Redirect	301	/institucional/guia/364-ique-hacer-en-caso-de-gs	/es/soy/seguridad/que-hacer/
+Redirect	301	/institucional/guia/365-linea-de-emergencias-gs	/es/soy/seguridad/lineas-emergencias/
+Redirect	301	/institucional/guia/366-corredores-seguros-gs	/es/soy/seguridad/corredores-seguros/
+RedirectMatch	301	/institucional/guia/37-tecnologia-gs(.*)	/es/soy/servicios/tecnologia/
+Redirect	301	/institucional/guia/371-para-estudiantes-gs	/es/soy/tecnologia/estudiantes/
+Redirect	301	/institucional/guia/372-para-profesores-y-empleados-gs	/es/soy/tecnologia/profesores-empleados/
+RedirectMatch	301	/institucional/guia/38-otros-servicios-gs(.*)	/es/soy/servicios/otros/
+Redirect	301	/institucional/guia/4-guia-rapida-gs	/es/soy/guia-servicios/guia-rapida/
+			
+Redirect	301	/videos	/es/multimedia
+Redirect	301	/noticias-videos-recientes	/es/multimedia
+Redirect	301	/noticias-transmisiones-canal-video	/es/multimedia
+Redirect	301	/noticias-series-canal-video	/es/multimedia
+Redirect	301	/noticias-especiales-canal-video	/es/multimedia
+			
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2485-el-futuro-de-la-reserva-forestal-thomas-van-der-hammen	/es/noticias/ambiente-y-sostenibilidad/el-futuro-de-la-reserva-thomas-van-der-hammen/
+Redirect	301	/noticias/informacion-general/uniandes-felicita-a-presidente-santos-por-el-nobel-de-paz	/es/noticias/gobierno-y-politica/uniandes-felicita-a-presidente-santos-por-el-nobel-de-paz/
+Redirect	301	/noticias/en-el-campus/novedades-en-el-campus	/es/noticias/comunidad/novedades-en-el-campus/
+Redirect	301	/noticias/informacion-general/expertos-en-rrhh-revelaron-secretos-en-procesos-de-seleccion	/es/noticias/comunidad/expertos-en-rrhh-revelaron-secretos-en-procesos-de-seleccion/
+Redirect	301	/noticias/medicina/estudiante-uniandino-entre-los-mejores-de-medicina-del-pais	/es/noticias/premios-y-reconocimientos/estudiante-uniandino-entre-los-mejores-de-medicina-del-pais/
+Redirect	301	/noticias/nuevos-programas/maestria-en-construccion-de-paz-apuesta-pionera-de-los-andes	/es/noticias/antropologia/maestria-en-construccion-de-paz-apuesta-pionera-para-el-posconflicto/
+Redirect	301	/noticias/economia/icuando-comenzo-el-problema-en-el-bronx	/es/noticias/economia-y-negocios/que-hay-que-hacer-para-que-desalojo-del-bronx-no-sea-otro-intento-fallido/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2429-la-impresion-de-los-primeros-dias	/es/noticias/comunidad/la-impresion-de-los-primeros-dias/
+Redirect	301	/noticias/administracion/estudiante-uniandino-gana-premio-nacional-de-emprendimiento	/es/noticias/estudiante-uniandino-gana-premio-nacional-de-emprendimiento/
+Redirect	301	/noticias-series-canal-video-lista/65-s-tenemos-que-hablar/2385-charla-con-el-director-de-el-abrazo-de-la-serpiente-ciro-guerra	/es/noticias/teatro-cine-y-msica/decian-que-era-una-pelicula-que-no-valia-la-pena-hacerla-ciro-guerra/
+Redirect	301	/noticias/informacion-general/los-mejores-en-su-hora-grados-2015-2	/es/noticias/grados/reconocimiento-a-los-mejores-estudiantes/
+Redirect	301	/noticias/ingenieria/lanzan-centro-de-excelencia-en-investigacion-sobre-uso-intensivo-de-datos	/es/noticias/ingeniera/lanzan-centro-de-excelencia-en-investigacion-sobre-uso-intensivo-de-datos/
+Redirect	301	/noticias/informacion-general/nuevo-vicerrector-de-desarrollo-y-egresados	/es/noticias/nombramientos/nuevo-vicerrector-de-desarrollo-y-egresados/
+Redirect	301	/noticias/ciencias/paola-pinilla-es-la-colombiana-becada-por-la-nasa	/es/noticias/matematica-fisica-y-quimica/paola-pinilla-es-la-colombiana-becada-por-la-nasa/
+Redirect	301	/noticias/en-el-campus/residencias-estudiantiles-uniandes	/es/noticias/comunidad/residencias-estudiantiles-en-la-universidad-de-los-andes/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2447-economia-para-el-99-de-la-poblacion	/es/noticias/economia-y-negocios/economia-para-el-99-de-la-poblacion/
+Redirect	301	/noticias/informacion-general/el-inminente-fin-del-conflicto-armado-colombiano	/es/noticias/gobierno-y-politica/el-inminente-fin-del-conflicto-armado-colombiano/
+Redirect	301	/noticias/informacion-general/eduardo-escallon-primer-decano-de-la-facultad-de-educacion	/es/noticias/nombramientos/eduardo-escallon-primer-decano-de-la-facultad-de-educacion/
+Redirect	301	/noticias/informacion-general/buen-ciclo-de-sueno-y-cortos-tiempos-de-concentracion-clave-para-aprender	/es/noticias/salud-y-medicina/buen-ciclo-de-sueno-y-cortos-tiempos-de-concentracion-claves-para-aprender/
+Redirect	301	/noticias/informacion-general/becados-por-excelencia-en-pruebas-saber-pro	/es/noticias/comunidad/becados-por-excelencia-en-pruebas-saber-pro/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2202-miercoles-en-vivo-colombia-magia-salvaje	/es/noticias/ambiente-y-sostenibilidad/foro-colombia-magia-salvaje/
+Redirect	301	/noticias/informacion-general/uniandes-se-destaca-en-ranking-qs-por-asignaturas	/es/noticias/premios-y-reconocimientos/uniandes-se-destaca-en-ranking-qs-por-asignaturas/
+Redirect	301	/noticias/informacion-general/llantas-usadas-utiles-para-producir-carbon-activado	/es/noticias/ambiente-y-sostenibilidad/llantas-usadas-utiles-para-producir-carbon-activado/
+Redirect	301	/noticias/nuevos-programas/nuevos-programas-en-los-andes	/es/noticias/en-el-campus/nuevos-programas-academicos/
+Redirect	301	/noticias/informacion-general/silvia-restrepo-la-biologa-que-ayudo-a-la-yuca-colombiana	/es/noticias/ciencias-biolgicas/silvia-restrepo-la-biologa-que-ayudo-a-la-yuca-colombiana/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2146-fracking-en-colombia	/es/noticias/ambiente-y-sostenibilidad/fracking-en-colombia/
+Redirect	301	/noticias/nuevos-programas/uniandes-ofrecera-curso-gratuito-sobre-la-obra-de-garcia-marquez	/es/noticias/historia-lenguaje-y-cultura/curso-gratuito-sobre-garcia-marquez/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2472-que-debemos-saber-acerca-del-zika	/es/noticias/ambiente-y-sostenibilidad/que-debemos-saber-sobre-el-zika/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2652-marihuana-medicinal-lo-que-implica-su-aprobacion-en-colombia	/es/noticias/salud-y-medicina/marihuana-medicinal-lo-que-implica-su-aprobacion-en-colombia/
+Redirect	301	/noticias/en-el-campus/nuevo-decano-de-la-facultad-de-ingenieria	/es/noticias/ingeniera/nuevo-decano-de-la-facultad-de-ingenieria/
+Redirect	301	/noticias-series-canal-video-lista/65-s-tenemos-que-hablar/2515-jaime-barrera-60-anos-dedicados-al-estudio-del-japones	/es/noticias/historia-lenguaje-y-cultura/jaime-barrera-60-anos-dedicados-al-estudio-del-japones/
+Redirect	301	/noticias/informacion-general/coursera-y-uniandes-se-asocian-para-ampliar-oferta-educativa-en-espanol	/es/noticias/comunidad/coursera-y-uniandes-se-asocian-para-ampliar-oferta-educativa/
+Redirect	301	/noticias/derecho/catalina-botero-nueva-decana-de-derecho	/es/noticias/derecho/catalina-botero-nueva-decana-de-derecho/
+Redirect	301	/noticias/informacion-general/consejo-superior-ratifica-rechazo-de-uniandes-a-todo-tipo-de-acoso	/es/noticias/comunidad/consejo-superior-ratifica-rechazo-de-uniandes-a-todo-tipo-de-acoso/
+Redirect	301	/noticias/economia/ique-cambiaria-en-colombia-y-que-no-si-se-firma-un-acuerdo-en-la-habana	/es/noticias/economia-y-negocios/que-cambiaria-en-colombia-y-que-no-si-se-firma-un-acuerdo-en-la-habana/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/2655-ingenieria-industrial-para-mejorardecisiones-en-el-sistema-penal-acusatorio	/es/noticias/ingeniera/ingenieria-industrial-para-apoyar-decisiones-en-el-sistema-penal-acusatorio/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2475-evolucion-de-las-app-en-colombia	/es/noticias/desarrollo-regional/evolucion-de-las-app-en-colombia/
+Redirect	301	/noticias/economia/efectos-de-la-paz-en-el-crecimiento-del-pib	/es/noticias/economia-y-negocios/efectos-de-la-paz-en-el-crecimiento-del-pib/
+Redirect	301	/noticias-video-recientes-cana-video/53-v-nuevos-programas/1946-uniandes-crea-pregrado-en-contaduria-internacional	/es/noticias/economia-y-negocios/nuevo-pregrado-en-contaduria-internacional/
+Redirect	301	/noticias/ingenieria/crean-maestria-en-seguridad-de-la-informacion	/es/noticias/ingeniera/nueva-maestria-en-seguridad-de-la-informacion/
+Redirect	301	/noticias/ciencias-sociales/fundacion-toyota-beca-investigacion-de-profesor-uniandino	/es/noticias/premios-y-reconocimientos/fundacion-toyota-beca-investigacion-de-profesor-uniandino/
+Redirect	301	/noticias-video-recientes-cana-video/54-v-donaciones-apoyo-financiero/2571-liderandes-busca-otorgar-becas-a-tres-actores-del-conflicto	/es/noticias/filantropia/liderandes-busca-otorgar-becas-a-tres-actores-del-conflicto/
+Redirect	301	/noticias/en-el-campus/carlos-davila-ladron-de-guevara-profesor-emerito	/es/noticias/en-el-campus/inicia-intercambio-academico-entre-uniandes-y-el-tecnologico-de-monterrey/
+Redirect	301	/noticias/informacion-general/inicia-intercambio-academico-entre-uniandes-y-el-tecnologico-de-monterrey	/es/noticias/en-el-campus/inicia-intercambio-academico-entre-uniandes-y-el-tecnologico-de-monterrey/
+Redirect	301	/noticias/egresados/juan-guillermo-ripoll-sanz-grado-summa-cum-laude-2016-1	/es/noticias/grados/juan-guillermo-ripoll-sanz-grado-summa-cum-laude-20161/
+Redirect	301	/noticias/en-el-campus/condolencias-hernando-groot	/es/noticias/comunidad/todo-profesor-universitario-tiene-que-ser-un-investigador-hernando-groot/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2903-con-muro-de-fotografias-universidad-rinde-homenaje-a-profesores-emeritos	/es/noticias/en-el-campus/con-muro-de-fotografias-universidad-rinde-homenaje-a-profesores-emeritos/
+Redirect	301	/noticias/egresados/uniandina-es-la-primera-latinoamericana-en-recibir-la-medalla-maxwell	/es/noticias/egresados/uniandina-es-la-primera-latinoamericana-en-recibir-la-medalla-maxwell/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2522-director-editorial-de-the-new-york-times-espanol-en-los-andes	/es/noticias/en-el-campus/inicia-intercambio-academico-entre-uniandes-y-el-tecnologico-de-monterrey/
+Redirect	301	/noticias/informacion-general/crean-protocolo-para-casos-de-maltrato-y-acoso	/es/noticias/en-el-campus/crean-protocolo-para-casos-de-maltrato-y-acoso/
+Redirect	301	/noticias/donaciones-apoyo-financiero/uniandinos-comprometidos-con-un-mejor-futuro	/es/noticias/comunidad/liderandes-duplico-su-meta-entregara-seis-becas/
+Redirect	301	/noticias/ciencias-sociales/qes-imposible-no-educar-sobre-sexualidadq	/es/noticias/educacion/es-imposible-no-educar-sobre-sexualidad/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2435-presidente-del-banco-mundial-hablo-en-uniandes-sobre-el-proceso-de-paz	/es/noticias/economia-y-negocios/presidente-del-banco-mundial-hablo-en-uniandes-sobre-el-proceso-de-paz/
+Redirect	301	/noticias/egresados/los-mejores-en-su-hora-grados-2015-1	/es/noticias/grados/los-mejores-en-su-hora--grados-20151/
+Redirect	301	/noticias/artes-y-humanidades/morat-el-nuevo-vicio-de-paulina	/es/noticias/en-el-campus/morat-el-nuevo-vicio-de-paulina/
+Redirect	301	/noticias/informacion-general/vicerrector-eduardo-behrentz-recibio-la-orden-al-merito-julio-garavito	/es/noticias/en-el-campus/vicerrector-eduardo-behrentz-recibio-la-orden-al-merito-julio-garavito/
+Redirect	301	/noticias/informacion-general/expertos-en-recursos-humanos-prefieren-la-pasion-antes-que-a-la-experiencia	/es/noticias/economia-y-negocios/directores-de-recursos-humanos-prefieren-pasion-que-experiencia/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2422-memoria-uniandina-historias-construidas-en-el-tiempo	/es/noticias/en-el-campus/memoria-uniandina-historias-construidas-en-el-tiempo/
+Redirect	301	/noticias/informacion-general/desarrollo-e-innovacion-en-la-industria-quimica	/es/noticias/ingeniera/desarrollo-e-innovacion-en-la-industria-quimica/
+Redirect	301	/noticias/ciencias/mauricio-velasco-matematico-de-los-andes-recibio-premio-twas-2016	/es/noticias/matematica-fisica-y-quimica/mauricio-velasco-matematico-de-los-andes-recibio-premio-twas/
+Redirect	301	/noticias/educacion/formamos-maestros-innovadores-criticos-y-autonomos	/es/noticias/educacion/%C2%91formamos-maestros-innovadores-criticos-y-autonomos%C2%92/
+Redirect	301	/noticias/donaciones-apoyo-financiero/tres-estudiantes-destacados-nuevos-merecedores-de-beca-gabriel-vega-lara	/es/noticias/economia-y-negocios/tres-estudiantes-destacados-beneficiarios-de-beca-gabriel-vega-lara/
+Redirect	301	/noticias/arquitectura-y-diseno/pokemon-go-y-su-aparicion-en-el-mundo-real	/es/noticias/antropologia/pokemon-go-y-su-aparicion-en-el-mundo-real/
+Redirect	301	/noticias/donaciones-apoyo-financiero/inverlink-de-cara-al-futuro-del-pais	/es/noticias/filantropia/inverlink-de-cara-al-futuro-del-pais/
+Redirect	301	/noticias/en-el-campus/diana-maria-agudelo-nueva-directora-de-psicologia	/es/noticias/nombramientos/diana-maria-agudelo-nueva-directora-de-psicologia/
+Redirect	301	/noticias/administracion/uniandinas-representaran-a-colombia-en-loreal-brandstorm-2016	/es/noticias/economia-y-negocios/uniandinas-representaran-a-colombia-en-l%C2%92oreal-brandstorm-2016/
+Redirect	301	/noticias/informacion-general/no-se-pierda-en-el-campus-irecorralo-aquÇð	/es/noticias/en-el-campus/no-se-pierda-en-el-campus-recorralo-aqui/
+Redirect	301	/noticias/informacion-general/una-leccion-para-el-posconflicto	/es/noticias/filantropia/una-leccion-para-el-posconflicto/
+Redirect	301	/noticias/informacion-general/universidades-crean-un-instituto-colombo-aleman-para-la-paz-icap	/es/noticias/en-el-campus/universidades-crean-el-instituto-colomboaleman-para-la-paz/
+Redirect	301	/noticias/informacion-general/isonar-no-es-suficiente	/es/noticias/ingeniera/sonar-no-es-suficiente/
+Redirect	301	/noticias/ciencias-sociales/aunque-no-es-parte-del-sistema-productivo-la-filosofia-es-necesaria	/es/noticias/en-el-campus/%C2%91aunque-no-es-parte-del-sistema-la-filosofia-es-necesaria%C2%92/
+Redirect	301	/noticias/arquitectura-y-diseno/la-arquitectura-es-con-la-gente	/es/noticias/arquitectura-y-diseno/la-arquitectura-es-con-la-gente/
+Redirect	301	/noticias/egresados/juan-manuel-santos-grado-summa-cum-laude-2015-1	/es/noticias/grados/juan-manuel-santos-grado-summa-cum-laude-20151/
+Redirect	301	/noticias/ciencias-sociales/el-fin-del-conflicto-el-cese-al-fuego-y-la-dejacion-de-armas	/es/noticias/gobierno-y-politica/%C2%91el-fin-del-conflicto%C2%92-el-cese-al-fuego-y-la-dejacion-de-armas/
+Redirect	301	/noticias/medicina/american-college-of-sports-medicine-reconoce-trayectoria-de-john-duperly	/es/noticias/premios-y-reconocimientos/american-college-of-sports-medicine-reconoce-trayectoria-de-john-duperly/
+Redirect	301	/noticias-video-recientes-cana-video/33-v-ciencias-sociales/2621-50-anos-ensenando-homenaje-a-pamela-wilkie	/es/noticias/historia-lenguaje-y-cultura/50-anos-ensenando-homenaje-a-pamela-wilkie/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2887-innovacion-e-investigacion-en-colombia-lo-que-hay-que-aprender	/es/noticias/desarrollo-regional/innovacion-e-investigacion-en-colombia-lo-que-hay-que-aprender/
+Redirect	301	/noticias/ciencias-sociales/plebiscito-los-riesgos-de-la-refrendacion	/es/noticias/gobierno-y-politica/plebiscito-los-riesgos-de-la-refrendacion/
+Redirect	301	/noticias/informacion-general/balance-positivo-para-uniandes-en-tecnnova	/es/noticias/entender-las-necesidades-del-entorno/
+Redirect	301	/noticias/medicina/que-la-vida-de-estudiante-no-afecte-sus-habitos	/es/noticias/en-el-campus/que-la-vida-de-estudiante-no-afecte-sus-habitos/
+Redirect	301	/noticias-video-recientes-cana-video/39-v-economia/2570-cortometraje-uniandino-seleccionado-en-muestra-en-espana	/es/noticias/teatro-cine-y-msica/cortometraje-uniandino-seleccionado-en-muestra-en-espana/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2586-conferencia-en-honor-a-pamela-wilkie-de-hollmann	/es/noticias/historia-lenguaje-y-cultura/conferencia-en-honor-a-pamela-wilkie-de-hollmann/
+Redirect	301	/noticias/ciencias/detectaron-por-segunda-vez-ondas-gravitacionales-ique-son	/es/noticias/matematica-fisica-y-quimica/detectaron-por-segunda-vez-ondas-gravitacionales-que-son/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2939-seguridad-y-relaciones-internacionales-en-el-posconflicto	/es/noticias/economia-y-negocios/%C2%93deseamos-entregar-egresados-sensibles-a-posconflicto%C2%94-pablo-navas/
+Redirect	301	/noticias/derecho/premio-a-la-excelencia-fulbright-para-helena-alviar	/es/noticias/derecho/premio-a-la-excelencia-fulbright-para-helena-alviar/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2989-tenemos-que-humanizar-las-relaciones-entre-nosotros-frank-pearl	/es/noticias/grados/%C2%93tenemos-que-humanizar-las-relaciones-entre-nosotros%C2%94-frank-pearl/
+Redirect	301	/noticias/informacion-general/trabajo-interdisciplinario-dificil-y-necesario	/es/noticias/ambiente-y-sostenibilidad/trabajo-interdisciplinario-dificil-y-necesario/
+Redirect	301	/noticias/informacion-general/ies-usted-innovador-parte-1	/es/noticias/economia-y-negocios/es-usted-innovador-parte-1/
+Redirect	301	/noticias/en-el-campus/francisco-rueda-fajardo-nuevo-profesor-honorario	/es/noticias/ingeniera/francisco-rueda-fajardo-nuevo-profesor-honorario/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2836-la-historia-publica-se-toma-america-latina	/es/noticias/historia-lenguaje-y-cultura/aportes-desde-la-memoria-colectiva-a-la-historia-publica/
+Redirect	301	/noticias/administracion/la-cuenca-del-magdalena-cauca-tiene-una-enfermedad-cronica	/es/noticias/ambiente-y-sostenibilidad/la-cuenca-del-magdalenacauca-tiene-una-enfermedad-cronica/
+Redirect	301	/noticias/en-el-campus/consultorio-juridico-cambia-de-sede	/es/noticias/derecho/consultorio-juridico-cambia-de-sede/
+Redirect	301	/noticias/informacion-general/cuatro-patentes-de-uniandes-se-exhibieron-en-tecnnova	/es/noticias/economia-y-negocios/cuatro-patentes-de-uniandes-se-exhibieron-en-tecnnova/
+Redirect	301	/noticias/donaciones-apoyo-financiero/nueva-beca-patrocinada-por-city-park	/es/noticias/economia-y-negocios/nueva-beca-patrocinada-por-city-park/
+Redirect	301	/noticias/en-el-campus/nuevo-director-de-cesed	/es/noticias/economia-y-negocios/nuevo-director-del-cesed/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2961-el-dia-despues-del-plebiscito-ique-cambia	/es/noticias/economia-y-negocios/el-dia-despues-del-plebiscito-que-cambia/
+Redirect	301	/noticias/derecho/no-a-la-esterilizacion-de-personas-con-discapacidad	/es/noticias/derecho/rechazan-esterilizacion-de-personas-con-discapacidad/
+Redirect	301	/noticias/ingenieria/nuevo-decano-de-ingenieria	/es/noticias/nombramientos/eduardo-escallon-primer-decano-de-la-facultad-de-educacion/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/1937-antanas-mockus-universidad-etica-y-ciudadania	/es/noticias/filosofia/antanas-mockus-universidad-etica-y-ciudadania/
+Redirect	301	/noticias/lofarticle/academia-debe-exigir-responsabilidad-de-promotores-del-no	/es/noticias/gobierno-y-politica/academia-debe-exigir-responsabilidad-de-promotores-del-no/
+Redirect	301	/noticias/ingenieria/ique-paso-con-david	/es/noticias/ingeniera/que-paso-con-david/
+Redirect	301	/component/content/article/386-matoneo	/es/noticias/psicologia/fueron-tres-tristes-tigres%C2%85/
+Redirect	301	/component/content/article/388-matoneo	/es/noticias/psicologia/que-es-la-intimidacion-escolar/
+Redirect	301	/component/content/article/389-matoneo	/es/noticias/psicologia/aulas-en-paz-en-mexico/
+Redirect	301	/noticias/ingenieria/reconocer-el-fracaso-es-importante-en-las-organizaciones	/es/noticias/ingeniera/reconocer-el-fracaso-es-importante-en-las-organizaciones/
+Redirect	301	/noticias/ciencias-sociales/tristes-notas-desde-la-chorrera	/es/noticias/antropologia/tristes-notas-desde-la-chorrera/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2466-en-vivo-los-anos-oscuros-de-gerardo-reichel-dolmatoff	/es/noticias/antropologia/%C2%93los-anos-oscuros-de-gerardo-reicheldolmatoff%C2%94/
+Redirect	301	/noticias/informacion-general/premio-everis-semana-para-emprendedores-uniandinos	/es/noticias/ambiente-y-sostenibilidad/premio-everissemana-para-emprendedores-uniandinos/
+Redirect	301	/noticias/en-el-campus/nueva-directora-en-ciencia-politica	/es/noticias/nombramientos/nueva-directora-de-la-escuela-de-posgrados-en-ciencias-sociales/
+Redirect	301	/noticias/en-el-campus/nuevo-director-del-departamento-de-filosofia	/es/noticias/filosofia/nuevo-director-del-departamento-de-filosofia/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2692-apuestas-para-la-movilidad-sostenible-del-centro-historico-de-bogota	/es/noticias/ambiente-y-sostenibilidad/centro-sera-piloto-en-transporte-multimodal-para-la-ciudad/
+Redirect	301	/noticias/informacion-general/bienvenida-al-ombudsperson	/es/noticias/comunidad/ombudsperson-que-quien-como/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/2477-la-informacion-como-activo	/es/noticias/ingeniera/la-informacion-como-activo/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2487-las-ciencias-sociales-en-una-colombia-posacuerdo	/es/noticias/gobierno-y-politica/las-ciencias-sociales-en-una-colombia-posacuerdo/
+Redirect	301	/noticias/informacion-general/innovacion-con-impacto-social	/es/noticias/desarrollo-regional/innovacion-con-impacto-social/
+Redirect	301	/noticias/egresados/grados-magna-cum-laude-preg20161	/es/noticias/economia-y-negocios/grados-magna-cum-laude/
+Redirect	301	/noticias-video-recientes-cana-video/37-v-arquitectura-y-diseno/2920-profesores-de-los-andes-ganan-lapiz-de-acero-por-pabellon-macondo	/es/noticias/profesores-de-los-andes-ganan-lapiz-de-acero-por-pabellon-macondo/
+Redirect	301	/noticias/acreditacion/acreditacion-preguntas-frecuentes	/es/noticias/en-el-campus/acreditacion--preguntas-frecuentes/
+Redirect	301	/noticias/en-el-campus/practicas-academicas-nueva-opcion-de-grado-en-derecho	/es/noticias/derecho/practicas-academicas-nueva-opcion-de-grado-en-derecho/
+Redirect	301	/noticias/arquitectura-y-diseno/premio-cemex-2016-exalta-arquitectos-de-los-andes	/es/noticias/arquitectura-y-diseno/premio-cemex-2016-exalta-arquitectos-de-los-andes/
+Redirect	301	/component/content/article/486-campo-para-sonar	/es/noticias/educacion/campo-para-sonar/
+Redirect	301	/noticias/derecho/en-el-corazon-del-buen-pastor	/es/noticias/en-el-corazon-del-buen-pastor/
+Redirect	301	/noticias/cife/un-buen-maestro-deja-la-piel-en-el-aula-nancy-palacios	/es/noticias/educacion/un-buen-maestro-deja-la-piel-en-el-aula-nancy-palacios/
+Redirect	301	/noticias/informacion-general/diversidad-divino-tesoro	/es/noticias/desarrollo-regional/diversidad-divino-tesoro/
+Redirect	301	/noticias-video-recientes-cana-video/38-v-medicina/2834-qtodos-podemos-correr-una-10kq	/es/noticias/filantropia/todos-podemos-correr-una-10k/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2452-el-reto-de-construir-una-casa-en-10-dias	/es/noticias/ambiente-y-sostenibilidad/el-reto-de-construir-una-casa-en-diez-dias/
+Redirect	301	/noticias/informacion-general/los-rebeldes-de-la-innovacion	/es/noticias/desarrollo-regional/los-rebeldes-de-la-innovacion/
+Redirect	301	/noticias/en-el-campus/renuevan-nombramiento-en-admisiones-y-registro	/es/noticias/antropologia/renuevan-nombramiento-en-antropologia/
+Redirect	301	/noticias/informacion-general/mario-laserna-pinzon-1923-2013	/es/noticias/comunidad/albert-einstein--mario-laserna-correspondencia/
+Redirect	301	/noticias/donaciones-apoyo-financiero/comprar-en-uniandes-es-apoyar-al-fopre	/es/noticias/comunidad/comprar-en-uniandes-es-apoyar-al-fopre/
+Redirect	301	/noticias/ingenieria/emprendimiento-en-ingenieria	/es/noticias/ingeniera/como-emprender-en-ingenieria/
+Redirect	301	/component/content/article/548-discurso-de-posecion-del-rector-pablo-navas	/es/noticias/en-el-campus/discurso-de-posesion-del-rector-pablo-navas/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2919-el-acuerdo-final-de-paz-es-un-reto-esperanzador	/es/noticias/gobierno-y-politica/el-acuerdo-final-de-paz-es-un-reto-esperanzador/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2629-voces-diversas-nuevas-lecturas-de-soledad-acosta-de-samper	/es/noticias/historia-lenguaje-y-cultura/voces-diversas-nuevas-lecturas-de-soledad-acosta-de-samper/
+Redirect	301	/noticias/derecho/colombia-un-pais-de-reconstruccion	/es/noticias/filosofia/colombia-un-pais-de-reconstruccion/
+Redirect	301	/noticias/donaciones-apoyo-financiero/compre-en-amazonsmile-y-done-a-quiero-estudiar	/es/noticias/filantropia/compre-en-amazonsmile-y-done-a-la-excelencia/
+Redirect	301	/noticias/ciencias-sociales/los-problemas-de-las-encuestas-y-de-su-divulgacion	/es/noticias/gobierno-y-politica/los-problemas-de-las-encuestas-y-de-su-divulgacion/
+Redirect	301	/noticias/informacion-general/los-andes-primera-universidad-colombiana	/es/noticias/periodismo-y-comunicaciones/los-andes-primera-universidad-colombiana/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2846-mark-burry-y-los-misterios-de-la-sagrada-familia	/es/noticias/arquitectura-y-diseno/solo-somos-interpretes-de-gaudi-mark-burry/
+Redirect	301	/noticias/informacion-general/negociar-para-la-innovacion-colaborativa	/es/noticias/desarrollo-regional/negociar-para-la-innovacion-colaborativa/
+Redirect	301	/noticias/ciencias-sociales/la-participacion-politica-en-el-poscarcuerdo	/es/noticias/gobierno-y-politica/la-participacion-politica-de-las-farc-en-el-posacuerdo/
+Redirect	301	/noticias/ingenieria/identifican-zonas-donde-estarian-mejor-ubicados-nuevos-colegios-de-bogota	/es/noticias/educacion/identifican-zonas-de-mejor-ubicacion-para-colegios-de-bogota/
+Redirect	301	/noticias/informacion-general/clubes-de-ciencia-colombia-llega-por-segunda-vez-a-los-andes	/es/noticias/ciencias-biolgicas/clubes-de-ciencia-colombia-llega-por-segunda-vez-a-los-andes/
+Redirect	301	/noticias/ciencias-sociales/las-disculpas-estrategia-para-tocar-emociones	/es/noticias/historia-lenguaje-y-cultura/las-disculpas-estrategia-para-tocar-emociones/
+Redirect	301	/noticias/ingenieria/adolescentes-crearon-apps-y-videojuegos-en-campamento-de-verano	/es/noticias/educacion/adolescentes-crearon-apps-y-videojuegos-en-campamento-de-verano/
+Redirect	301	/noticias/ciencias-sociales/semillas-y-colores-investigacion-ganadora-en-colombia-biodiversa	/es/noticias/ciencias-biolgicas/semillas-y-colores-investigacion-ganadora-en-colombia-biodiversa/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2498-proteccion-de-datos-personales	/es/noticias/en-lo-virtual-los-derechos-deben-ser-reales-nelson-remolina/
+Redirect	301	/noticias/informacion-general/albert-einstein-mario-laserna-correspondencia	/es/noticias/comunidad/albert-einstein--mario-laserna-correspondencia/
+Redirect	301	/noticias/ingenieria/construyen-modelo-para-planeacion-estrategica-de-transporte-y-habitat-en-bo	/es/noticias/desarrollo-regional/construyen-modelo-para-planeacion-estrategica-en-bogota/
+Redirect	301	/noticias/ingenieria/innovar-es-el-futuro-de-la-ingenieria	/es/noticias/ingeniera/innovar-el-futuro-de-la-ingenieria/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2743-denominaciones-de-origen-ayudan-a-proteger-al-campo-y-a-los-artesanos	/es/noticias/desarrollo-regional/denominaciones-de-origen-ayudan-a-generar-desarrollo-territorial/
+Redirect	301	/noticias/egresados/david-andres-gomez-fajardo-abogado-y-politologo-preg20161	/es/noticias/derecho/david-andres-gomez-fajardo-abogado-y-politologo/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2197-en-vivo-lanzamiento-maestria-en-construccion-de-paz	/es/noticias/antropologia/maestria-en-construccion-de-paz-apuesta-pionera-para-el-posconflicto/
+Redirect	301	/noticias/informacion-general/innovacion-en-el-sector-financiero-ihacia-donde-va	/es/noticias/ingeniera/innovacion-en-el-sector-financiero-hacia-donde-va/
+Redirect	301	/noticias/ciencias-sociales/aprender-a-narrar-un-pais-nuevo-un-desafio-urgente	/es/noticias/gobierno-y-politica/aprender-a-narrar-un-pais-nuevo-es-un-desafio-urgente/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2436-8-foro-en-contenidos-digitales	/es/noticias/ingeniera/8%C2%B0-foro-en-contenidos-digitales-animacion-y-videojuegos/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2469-labio-de-liebre-de-fabio-rubiano-se-presenta-en-los-andes	/es/noticias/teatro-cine-y-msica/labio-de-liebre-de-fabio-rubiano-se-presenta-en-los-andes/
+Redirect	301	/noticias/derecho/corte-viola-derecho-internacional-al-aprobar-esterilizaciones	/es/noticias/derecho/corte-viola-derecho-internacional-al-aprobar-esterilizaciones/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/2969-premian-investigacion-que-permitio-entender-como-se-producen-los-deslizamie	/es/noticias/premios-y-reconocimientos/premian-investigacion-que-permitio-entender-los-deslizamientos/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2635-jody-williams-nobel-de-paz-hablara-sobre-su-lucha-contra-las-minas	/es/noticias/gobierno-y-politica/jody-williams-nobel-de-paz-habla-sobre-su-lucha-contra-las-minas/
+Redirect	301	/noticias/ingenieria/renuevan-acreditacion-de-alta-calidad-a-ingenieria-ambiental	/es/noticias/educacion/renuevan-acreditacion-de-alta-calidad-a-ingenieria-ambiental/
+Redirect	301	/noticias/administracion/distribucion-inclusiva-apuesta-del-bid-para-combatir-la-pobreza	/es/noticias/economia-y-negocios/distribucion-inclusiva-apuesta-del-bid-para-combatir-la-pobreza/
+Redirect	301	/noticias/administracion/la-ventaja-competitiva-esta-en-el-talento-humano	/es/noticias/economia-y-negocios/la-ventaja-competitiva-esta-en-el-talento-humano/
+Redirect	301	/noticias/informacion-general/innovacion-y-diseno-de-productos-quimicos-icomo-que-y-para-que	/es/noticias/economia-y-negocios/innovacion-y-diseno-de-productos-quimicos-como-que-y-para-que/
+Redirect	301	/noticias/ciencias-sociales/parejas-si-familias-tambien	/es/noticias/gobierno-y-politica/la-homosexualidad-no-es-aprendida/
+Redirect	301	/noticias/informacion-general/profesores-universitarios-piden-celeridad-en-acuerdo-final-de-paz-con-farc	/es/noticias/gobierno-y-politica/profesores-piden-celeridad-en-acuerdo-final-de-paz-con-farc/
+Redirect	301	/noticias/informacion-general/fopre-apoyo-economico-al-talento-que-entrega-la-comunidad-uniandina	/es/noticias/en-el-campus/fopre-apoyo-al-talento-donado-por-la-comunidad-uniandina/
+Redirect	301	/noticias/informacion-general/co-diseno-en-la-accion-innovacion-con-impacto-social	/es/noticias/ingeniera/codiseno-en-accion-innovacion-con-impacto-social/
+Redirect	301	/noticias/informacion-general/tres-estudiantes-de-los-andes-ganadores-de-la-beca-prestagio	/es/noticias/economia-y-negocios/tres-estudiantes-destacados-beneficiarios-de-beca-gabriel-vega-lara/
+Redirect	301	/noticias/informacion-general/ana-maria-baron-mendoza-grado-summa-cum-laude-2015-2	/es/noticias/grados/ana-maria-baron-mendoza-%C2%91grado-summa-cum-laude%C2%92-20152/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2628-fotografia-conflicto-y-libertad-de-prensa	/es/noticias/periodismo-y-comunicaciones/fotografia-conflicto-y-libertad-de-prensa/
+Redirect	301	/noticias/informacion-general/andres-felipe-rodriguez-martinez-grado-summa-cum-laude-2015-2	/es/noticias/egresados/Angela-maria-castaneda-oviedo-summa-cum-laude-de-ingenieria/
+Redirect	301	/noticias/ingenieria/juan-saldarriaga-en-la-elite-de-la-ingenieria-civil	/es/noticias/ingeniera/juan-saldarriaga-en-la-elite-de-la-ingenieria-civil/
+Redirect	301	/noticias/administracion/innovacion-y-sostenibilidad-les-abren-paso-a-las-flores-colombianas	/es/noticias/ambiente-y-sostenibilidad/innovacion-y-sostenibilidad-abren-paso-a-las-flores-colombianas/
+Redirect	301	/noticias/informacion-general/diana-catalina-murcia-alejo-grado-summa-cum-laude-2015-2	/es/noticias/grados/diana-catalina-murcia-alejo-grado-summa-cum-laude-20152/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/2850-clubes-de-ciencia-cuna-de-cientificos	/es/noticias/ciencias-biolgicas/clubes-de-ciencia-cuna-de-cientificos/
+Redirect	301	/noticias/derecho/en-estudios-internacionales-en-georgetown-el-mejor-es-uniandino	/es/noticias/derecho/uniandino-el-mejor-en-estudios-internacionales-en-georgetown/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2863-opera-la-flauta-magica-en-espanol-version-uniandes-y-universidad-del-norte	/es/noticias/teatro-cine-y-msica/Opera-la-flauta-magica-en-version-de-uniandes-y-la-universidad-del-norte/
+Redirect	301	/component/content/article/926-abren-maestria-en-ingenieria-biomedica	/es/noticias/ciencias-biolgicas/nueva-maestria-en-ingenieria-biomedica/
+Redirect	301	/noticias/artes-y-humanidades/falcao-no-es-james-james-no-es-messipero-colombia-es-futbol	/es/noticias/educacion/falcao-no-es-james-james-no-es-messi%C2%85-pero-colombia-es-futbol/
+Redirect	301	/noticias/arquitectura-y-diseno/entre-la-casa-y-la-calle	/es/noticias/entre-la-casa-y-la-calle/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2506-asi-sono-toto-la-momposina-en-los-andes	/es/noticias/en-el-campus/asi-sono-toto-la-momposina-en-los-andes/
+Redirect	301	/noticias/en-el-campus/zandra-pedraza-nueva-directora-de-escuela-de-posgrados-en-ciencias-sociale	/es/noticias/nombramientos/nueva-directora-de-la-escuela-de-posgrados-en-ciencias-sociales/
+Redirect	301	/noticias/informacion-general/david-arbelaez-garcia-grado-summa-cum-laude-2015-2	/es/noticias/grados/david-arbelaez-garcia-grado-summa-cum-laude-20152/
+Redirect	301	/noticias/informacion-general/rector-invita-a-marchar-por-la-paz	/es/noticias/comunidad/rector-invita-a-marchar-por-la-paz/
+Redirect	301	/noticias/informacion-general/5-moocs-de-los-andes-entre-los-10-mas-tomados-en-coursera-latinoamerica	/es/noticias/educacion/5-moocs-de-los-andes-entre-los-10-mas-tomados-en-coursera-latinoamerica/
+Redirect	301	/noticias/educacion/qeducacion-a-la-cartaq-el-futuro-de-la-educacion-superior	/es/noticias/educacion/educacion-a-la-carta-el-futuro-de-la-educacion-superior/
+Redirect	301	/noticias/informacion-general/martin-velez-pardo-grado-summa-cum-laude-2015-2	/es/noticias/grados/grados-de-pregrado-20152--palabras-de-martin-velez-pardo/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2579-a-analizar-retos-economicos-del-posconflicto-en-colombia	/es/noticias/economia-y-negocios/cambio-de-mentalidad-en-la-sociedad-es-clave-para-transformaciones-sociales/
+Redirect	301	/noticias/informacion-general/lina-maria-mancipe-castro-grado-summa-cum-laude-2015-2	/es/noticias/grados/lina-maria-mancipe-castro-%C2%91grado-summa-cum-laude%C2%92-20152/
+Redirect	301	/component/content/article/800-los-viajes-de-hermes	/es/noticias/economia-y-negocios/los-viajes-de-hermes/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2930-una-mirada-al-gobierno-de-virgilio-barco-30-anos-despues	/es/noticias/gobierno-y-politica/una-mirada-al-gobierno-de-virgilio-barco-30-anos-despues/
+Redirect	301	/noticias/egresados/alejandra-silva-carvajal-administradora-preg20161	/es/noticias/grados/alejandra-silva-carvajal-administradora/
+Redirect	301	/noticias/ingenieria/ingenieria-para-soluciones-a-problemas-sociales	/es/noticias/ingeniera/ingenieria-de-problemas-sociales/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2494-por-un-estado-mas-efectivo	/es/noticias/economia-y-negocios/por-un-estado-mas-efectivo-informe-de-caf/
+Redirect	301	/noticias/en-el-campus/nueva-directora-de-la-escuela-de-posgrados-de-arte	/es/noticias/nombramientos/nueva-directora-de-la-escuela-de-posgrados-en-ciencias-sociales/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2585-palabras-de-ignacio-mantilla-prada-preg20161	/es/noticias/grados/formacion-es-la-capacidad-de-responder-lo-que-aun-no-se-ha-cuestionado/
+Redirect	301	/noticias/ingenieria/en-colombia-48-del-agua-se-pierde-en-sistemas-de-distribucion	/es/noticias/ambiente-y-sostenibilidad/en-colombia-48--del-agua-se-pierde-en-sistemas-de-distribucion/
+Redirect	301	/noticias/ciencias-sociales/diseminar-esperanza-es-la-opcion-para-los-colombianos	/es/noticias/gobierno-y-politica/diseminar-esperanza-es-la-opcion-para-los-colombianos-thania-paffenholz/
+Redirect	301	/noticias/en-el-campus/eduardo-pombo-leyva-1929-2016	/es/noticias/en-el-campus/eduardo-pombo-leyva-1929--2016/
+Redirect	301	/noticias/informacion-general/reconocimiento-a-los-mejores-estudiantes	/es/noticias/grados/reconocimiento-a-los-mejores-estudiantes/
+Redirect	301	/noticias/ingenieria/entregan-medalla-al-merito-tecnologico-para-yezid-donoso	/es/noticias/ingeniera/entregan-medalla-al-merito-tecnologico-a-yezid-donoso/
+Redirect	301	/noticias/en-el-campus/nueva-directora-del-departamento-de-musica	/es/noticias/nombramientos/nueva-directora-del-departamento-de-musica/
+Redirect	301	/noticias/informacion-general/la-universidad-debe-ser-lider-a-la-hora-de-la-innovacion-abierta	/es/noticias/desarrollo-regional/la-universidad-debe-ser-lider-a-la-hora-de-la-innovacion-abierta/
+Redirect	301	/noticias/egresados/david-ricardo-luna-vinueza-abogado-y-economista-preg20161	/es/noticias/derecho/david-ricardo-luna-vinueza-abogado-y-economista/
+Redirect	301	/noticias/derecho/abogan-por-la-salud-publica-y-el-medio-ambiente	/es/noticias/ambiente-y-sostenibilidad/abogan-por-la-salud-publica-y-el-medio-ambiente/
+Redirect	301	/noticias/informacion-general/coctel-de-virus-controlaria-bacteria-salmonella-en-aves	/es/noticias/ambiente-y-sostenibilidad/coctel-de-virus-controlaria-bacteria-salmonella-en-aves/
+Redirect	301	/noticias/informacion-general/ciudades-regiones-y-sus-transformaciones-novedad-editorial-uniandes	/es/noticias/en-el-campus/ciudades-regiones-y-sus-transformaciones/
+Redirect	301	/noticias/nuevos-programas/maestria-para-explorar	/es/noticias/ingeniera/maestria-para-explorar/
+Redirect	301	/noticias/informacion-general/stefania-pena-navarro-grado-summa-cum-laude-2015-2	/es/noticias/grados/stefania-pena-navarro-grado-summa-cum-laude-20152/
+Redirect	301	/noticias/en-el-campus/nuevo-director-de-posgrados-en-psicologia	/es/noticias/nombramientos/nuevo-director-de-posgrados-en-psicologia/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2854-reportes-financieros-transparentes-y-confiables-el-mayor-reto-del-estado	/es/noticias/economia-y-negocios/las-cuentas-claras-y-el-estado-funciona/
+Redirect	301	/noticias/informacion-general/la-orinoquia-un-territorio-biodiverso-que-demanda-un-desarrollo-sostenible	/es/noticias/ambiente-y-sostenibilidad/la-orinoquia-un-territorio-biodiverso-que-demanda-un-desarrollo-sostenible/
+Redirect	301	/noticias/ingenieria/listo-sistema-para-detectar-contaminantes-quimicos-en-los-rios	/es/noticias/ambiente-y-sostenibilidad/listo-sistema-para-detectar-contaminantes-quimicos-en-los-rios/
+Redirect	301	/noticias/egresados/daniel-castillo-bendeck-ingeniero-quimico-preg20161	/es/noticias/grados/daniel-castillo-bendeck-ingeniero-quimico/
+Redirect	301	/noticias/informacion-general/cider-institucion-clave-para-la-consolidacion-de-las-regiones	/es/noticias/desarrollo-regional/cider-institucion-clave-para-la-consolidacion-de-las-regiones/
+Redirect	301	/noticias/informacion-general/renovado-nombramiento-de-vicerrectora-de-investigaciones	/es/noticias/nombramientos/renovado-nombramiento-de-vicerrector-academico/
+Redirect	301	/noticias/derecho/icual-es-la-verdad	/es/noticias/derecho/cual-es-la-verdad/
+Redirect	301	/noticias/acreditacion/acreditacion-de-alta-calidad-para-maestria-en-ingenieria-mecanica	/es/noticias/ingeniera/acreditacion-de-alta-calidad-para-maestria-en-ingenieria-mecanica/
+Redirect	301	/noticias-video-recientes-cana-video/36-v-escuela-de-gobierno-alberto-lleras-camargo/2910-atrapadas-en-el-santa-fe-movilidad-de-las-mujeres-trans-en-colombia	/es/noticias/derecho/atrapadas-en-el-santa-fe-movilidad-de-las-mujeres-trans-en-colombia/
+Redirect	301	/noticias/informacion-general/la-libertad-esta-mas-ligada-a-la-incertidumbre	/es/noticias/grados/la-libertad-esta-mas-ligada-a-la-incertidumbre/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2093-vii-congreso-nacional-de-ingenieria-sismica	/es/noticias/ingeniera/vii-congreso-nacional-de-ingenieria-sismica/
+Redirect	301	/noticias/ciencias-sociales/ique-hace-el-congreso-de-la-republica-aparte-de-hacer-y-reformar-leyes	/es/noticias/gobierno-y-politica/que-hace-el-congreso-de-la-republica-aparte-de-hacer-y-reformar-leyes/
+Redirect	301	/noticias-video-recientes-cana-video/34-v-derecho/2968-entre-10-y-15-de-escolares-colombianos-ha-sido-victima-de-ciberbullying	/es/noticias/entre-10-y-15--de-escolares-colombianos-ha-sido-victima-de-ciberbullying/
+Redirect	301	/noticias/egresados/sergio-londono-gonzalez-abogado-preg20161	/es/noticias/grados/sergio-londono-gonzalez-abogado/
+Redirect	301	/noticias-video-recientes-cana-video/34-v-derecho/2977-vuelve-el-grupo-de-teatro-de-la-modelo-a-los-andes	/es/noticias/derecho/vuelve-el-grupo-de-teatro-de-la-modelo-a-los-andes/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2759-la-educacion-es-el-unico-camino-pablo-montoya-ganador-del-premio-romulo-gallegos-2015	/es/noticias/egresados/juan-camilo-luna-rios-magna-cum-laude-de-derecho/
+Redirect	301	/noticias/administracion/reconocimiento-a-maestria-en-gerencia-ambiental	/es/noticias/educacion/%C2%93la-educacion-es-el-unico-camino%C2%94-pablo-montoya/
+Redirect	301	/noticias-series-canal-video-lista/64-s-ique-es-eso/2708-diseno-para-promover-el-bienestar-humano	/es/noticias/arquitectura-y-diseno/diseno-para-promover-el-bienestar-humano/
+Redirect	301	/noticias/en-el-campus/carolyn-finck-nueva-directora-de-internacionalizacion	/es/noticias/en-el-campus/carolyn-finck-nueva-directora-de-internacionalizacion/
+Redirect	301	/component/content/article/835-acreditacion-internacional-para-ocho-programas-de-ingenieria	/es/noticias/ingeniera/acreditacion-abet-para-ocho-programas-de-ingenieria/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2653-pre-estreno-de-dos-mujeres-y-una-vaca-es-este-viernes-en-los-andes	/es/noticias/teatro-cine-y-msica/preestreno-de-dos-mujeres-y-una-vaca/
+Redirect	301	/noticias/informacion-general/posconflicto-una-nueva-negociacion	/es/noticias/gobierno-y-politica/posconflicto-una-nueva-negociacion/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2694-el-oficio-de-la-memoria	/es/noticias/gobierno-y-politica/el-oficio-de-la-memoria/
+Redirect	301	/noticias/ingenieria/los-andes-es-sede-de-encuentro-mundial-sobre-distribucion-de-agua-potable	/es/noticias/ambiente-y-sostenibilidad/los-andes-es-sede-de-encuentro-mundial-sobre-distribucion-de-agua-potable/
+Redirect	301	/noticias/medicina/buscan-mecanismo-para-deteccion-temprana-de-diabetes	/es/noticias/salud-y-medicina/buscan-mecanismo-para-deteccion-temprana-de-diabetes/
+Redirect	301	/noticias/derecho/hemos-fallado-en-perseguir-la-droga	/es/noticias/gobierno-y-politica/hemos-fallado-en-perseguir-la-droga/
+Redirect	301	/noticias/arquitectura-y-diseno/gala-impresonante-presentara-consolidacion-de-fondo-de-publicaciones	/es/noticias/arquitectura-y-diseno/gala-impresonante-presenta-novedades-editoriales/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2390-este-jueves-en-vivo-el-talento-humano-en-el-sector-publico	/es/noticias/economia-y-negocios/proyecto-egob-gestion-estrategica-del-talento-humano/
+Redirect	301	/noticias/derecho/investigacion-academica-con-fuerza-de-ley	/es/noticias/gobierno-y-politica/investigacion-academica-con-fuerza-de-ley/
+Redirect	301	/noticias/informacion-general/experimentar-para-crecer-una-manera-de-hacer-mooc	/es/noticias/educacion/experimentar-para-crecer-una-manera-de-hacer-mooc/
+Redirect	301	/component/content/article/894-nueva-beca-quiero-estudiar-derecho	/es/noticias/derecho/nueva-beca-quiero-estudiar--derecho/
+Redirect	301	/noticias-video-recientes-cana-video/40-v-cider/2630-ique-necesitan-los-nuevos-planificadores-urbanos-y-regionales	/es/noticias/desarrollo-regional/que-necesitan-los-nuevos-planificadores-urbanos-y-regionales/
+Redirect	301	/noticias-video-recientes-cana-video/34-v-derecho/2717-transformacion-de-la-infraestructura-educativa	/es/noticias/desarrollo-regional/la-infraestructura-educativa-tambien-es-un-aporte-a-la-equidad/
+Redirect	301	/noticias/en-el-campus/decano-en-propiedad-en-la-facultad-de-administracion	/es/noticias/nombramientos/decano-en-propiedad-en-administracion/
+Redirect	301	/component/content/article/730-icomo-esta-la-salud-en-colombia-ipara-donde-va	/es/noticias/economia-y-negocios/como-esta-la-salud-en-colombia/
+Redirect	301	/component/content/article/379-lucha-antidrogas-icual-es-el-camino-a-seguir	/es/noticias/economia-y-negocios/Exitos-fracasos-y-extravios/
+Redirect	301	/noticias/informacion-general/corriente-circumpolar-antartica-cca-una-fabrica-de-especies-coralinas	/es/noticias/ambiente-y-sostenibilidad/corriente-circumpolar-antartica-cca-una-fabrica-de-especies-coralinas/
+Redirect	301	/noticias/ciencias-sociales/los-andes-pondra-en-marcha-centro-de-salud-emocional	/es/noticias/psicologia/los-andes-pondra-en-marcha-centro-de-salud-emocional/
+Redirect	301	/noticias-series-canal-video-lista/64-s-ique-es-eso/2710-innovar-para-mejorar-las-condiciones-de-la-poblacion	/es/noticias/ambiente-y-sostenibilidad/innovar-para-mejorar-las-condiciones-de-la-poblacion/
+Redirect	301	/component/content/article/371-nuevo-pregrado-en-ingenieria-biomedica	/es/noticias/ingeniera/nuevo-pregrado-en-ingenieria-biomedica/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2566-lo-que-implica-pasar-de-atender-enfermos-a-prevenir-en-personas-sanas	/es/noticias/salud-y-medicina/empoderar-a-los-profesionales-de-la-salud-es-clave-en-cambio-de-modelo/
+Redirect	301	/noticias/en-el-campus/renuevan-nombramiento-de-juny-montoya-en-centro-de-etica-aplicada	/es/noticias/nombramientos/juny-montoya-directora-del-nuevo-centro-de-Etica/
+Redirect	301	/noticias/derecho/que-dicen-las-mujeres-con-discapacidad-sobre-su-propia-sexualidad	/es/noticias/derecho/que-dicen-las-mujeres-con-discapacidad-sobre-su-propia-sexualidad/
+Redirect	301	/noticias/informacion-general/sin-asombro-y-sin-ira-novedad-literaria-de-ediciones-uniandes	/es/noticias/gobierno-y-politica/sin-asombro-y-sin-ira-novedad-literaria-de-ediciones-uniandes/
+Redirect	301	/noticias/informacion-general/renovado-nombramiento-de-vicerrector-academico	/es/noticias/nombramientos/renovado-nombramiento-de-vicerrector-academico/
+Redirect	301	/noticias/arquitectura-y-diseno/los-edificios-altos-no-son-soluciones-para-familias-peter-land	/es/noticias/arquitectura-y-diseno/previ-proyecto-de-vivienda-en-peru-modelo-para-latinoamerica/
+Redirect	301	/noticias/informacion-general/viviendas-nuevas-cumplen-el-50-por-ciento-de-criterios-de-calidad	/es/noticias/arquitectura-y-diseno/viviendas-nuevas-cumplen-el-50-por-ciento-de-criterios-de-calidad/
+Redirect	301	/noticias/egresados/laura-andrea-tapias-martinez-ingeniera-industrial-preg20161	/es/noticias/grados/laura-andrea-tapias-martinez-ingeniera-industrial/
+Redirect	301	/noticias/informacion-general/retos-de-uniandes-palabras-de-diego-pizano-salazar	/es/noticias/comunidad/retos-de-uniandes-palabras-de-diego-pizano-salazar/
+Redirect	301	/component/content/article/417-hernando-barragan-nuevo-director-del-departamento-de-diseno	/es/noticias/arquitectura-y-diseno/hernando-barragan-nuevo-director-de-diseno/
+Redirect	301	/noticias/egresados/los-mejores-en-su-hora-grados-2014-2	/es/noticias/grados/los-mejores-en-su-hora--grados-20142/
+Redirect	301	/noticias/en-el-campus/alain-gauthier-sellier-profesor-emerito	/es/noticias/ingeniera/alain-gauthier-sellier-profesor-emerito/
+Redirect	301	/noticias/egresados/carolina-carrillo-diaz-ingeniera-quimica-preg20161	/es/noticias/grados/carolina-carrillo-diaz-ingeniera-quimica/
+Redirect	301	/noticias/egresados/andres-mauricio-guiot-isaac-filosofo-preg20161	/es/noticias/filosofia/andres-mauricio-guiot-isaac-filosofo/
+Redirect	301	/noticias-series-canal-video-lista/67-s-mirador/2709-ison-posibles-los-sistemas-industriales-sostenibles	/es/noticias/ambiente-y-sostenibilidad/que-es-la-ecologia-industrial/
+Redirect	301	/noticias/en-el-campus/renovado-nombramiento-de-directora-financiera	/es/noticias/nombramientos/renovado-nombramiento-de-directora-financiera/
+Redirect	301	/noticias/artes-y-humanidades/activismo-politico-en-internet-del-dicho-al-hecho	/es/noticias/gobierno-y-politica/activismo-politico-en-internet-del-dicho-al-hecho/
+Redirect	301	/noticias/cider/inclusion-de-enfoque-de-genero-en-acuerdo-de-paz-un-hecho-sin-precedentes	/es/noticias/gobierno-y-politica/inclusion-de-enfoque-de-genero-un-hecho-sin-precedentes/
+Redirect	301	/noticias/ciencias-sociales/ique-cambia-con-el-acuerdo	/es/noticias/gobierno-y-politica/que-cambia-con-el-acuerdo/
+Redirect	301	/noticias-video-recientes-cana-video/36-v-escuela-de-gobierno-alberto-lleras-camargo/2975-premio-nobel-sube-el-perfil-internacional-del-proceso-de-paz-en-colombia	/es/noticias/gobierno-y-politica/premio-nobel-sube-el-perfil-internacional-del-proceso-de-paz-en-colombia/
+Redirect	301	/noticias/informacion-general/ceo-recibe-donacion-para-mejorar-la-educacion-en-casanare	/es/noticias/desarrollo-regional/ninos-de-punto-nuevo-beneficiarios-de-donacion-al-ceo/
+Redirect	301	/component/content/article/619-nuevo-decano-de-medicina	/es/noticias/nombramientos/nuevo-decano-de-medicina/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/2955-descubren-tecnicas-orfebres-de-indigenas-en-el-siglo-iv-ac	/es/noticias/historia-lenguaje-y-cultura/descubren-tecnicas-orfebres-de-indigenas-en-el-siglo-iv-ac/
+Redirect	301	/component/content/article/886-icuales-seran-los-efectos-del-tlc	/es/noticias/economia-y-negocios/cuales-seran-los-efectos-del-tlc/
+Redirect	301	/noticias/informacion-general/centro-de-estudios-de-la-orinoquia-le-apuesta-al-maranon	/es/noticias/desarrollo-regional/proyecto-innovador-con-el-maranon-en-el-vichada/
+Redirect	301	/noticias/informacion-general/doce-grupos-de-investigacion-de-uniandes-participan-en-tecnnova	/es/noticias/economia-y-negocios/doce-grupos-de-investigacion-de-uniandes-participan-en-tecnnova/
+Redirect	301	/noticias/derecho/pensar-la-carcel-la-guerra-y-la-paz	/es/noticias/gobierno-y-politica/pensar-la-carcel-la-guerra-y-la-paz/
+Redirect	301	/noticias/administracion/naturalmente	/es/noticias/desarrollo-regional/emprendimiento-al-natural/
+Redirect	301	/component/content/article/354-distinciones-en-la-ceremonia-de-grados	/es/noticias/grados/los-mejores-en-su-hora/
+Redirect	301	/noticias-video-recientes-cana-video/36-v-escuela-de-gobierno-alberto-lleras-camargo/2701-desplazadas-por-la-violencia-y-por-sus-preferencias-sexuales	/es/noticias/periodismo-y-comunicaciones/desplazadas-por-la-violencia-y-por-sus-preferencias-sexuales/
+Redirect	301	/noticias/egresados/gabriel-restrepo-parrado-filosofo-preg20161	/es/noticias/grados/gabriel-restrepo-parrado-filosofo/
+Redirect	301	/noticias/cider/estas-son-las-9-virtudes-de-una-empresa-constructora-de-paz	/es/noticias/gobierno-y-politica/estas-son-las-nueve-virtudes-de-una-empresa-constructora-de-paz/
+Redirect	301	/noticias-video-recientes-cana-video/33-v-ciencias-sociales/2963-gano-el-no-iy-ahora-que-sigue	/es/noticias/gobierno-y-politica/gano-el-no-y-ahora-que-sigue/
+Redirect	301	/noticias/ingenieria/uniandino-en-proyecto-para-mejorar-el-centro-de-atlanta	/es/noticias/ingeniera/uniandino-en-proyecto-para-mejorar-el-centro-de-atlanta/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2446-grados-medicina-2016-1-himno-de-la-universidad-de-los-andes	/es/noticias/grados/himno-de-la-universidad-de-los-andes-ceremonia-de-grados-de-pregrado/
+Redirect	301	/noticias-series-canal-video-lista/65-s-tenemos-que-hablar/2707-la-champeta-se-graduo-en-los-andes	/es/noticias/teatro-cine-y-msica/la-champeta-se-graduo-en-los-andes/
+Redirect	301	/noticias/ciencias/colecciones-biologicas-vitales-para-la-ciencia	/es/noticias/ciencias-biolgicas/colecciones-biologicas-vitales/
+Redirect	301	/noticias/egresados/hayden-liu-weng-grado-summa-cum-laude-2015-1	/es/noticias/grados/hayden-liu-weng-grado-summa-cum-laude-20151/
+Redirect	301	/noticias/ciencias-sociales/ies-efectiva-la-atencion-en-salud-mental-para-victimas-del-conflicto	/es/noticias/gobierno-y-politica/es-efectiva-la-atencion-en-salud-mental-para-victimas/
+Redirect	301	/noticias/egresados/santiago-andres-ospina-celis-grado-summa-cum-laude-2015-1	/es/noticias/filosofia/santiago-andres-ospina-celis-grado-summa-cum-laude-20151/
+Redirect	301	/noticias/informacion-general/andres-felipe-sanchez-castro-grado-magna-cum-laude-2015-2	/es/noticias/filosofia/santiago-andres-ospina-celis-grado-summa-cum-laude-20151/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2511-lanzamiento-libro-proteccion-produccion-promocion	/es/noticias/desarrollo-regional/lanzaron-el-libro-proteccion-produccion-promocion/
+Redirect	301	/noticias/ciencias-sociales/el-capitalismo-se-transforma-no-se-acaba	/es/noticias/economia-y-negocios/%C2%91el-capitalismo-se-transforma-no-se-acaba%C2%92/
+Redirect	301	/noticias/en-el-campus/gabriel-tellez-sigue-a-cargo-del-departamento-de-fisica-por-dos-anos-mas	/es/noticias/nombramientos/gabriel-tellez-seguira-a-cargo-del-departamento-de-fisica/
+Redirect	301	/noticias/ingenieria/juan-guillermo-saldarriaga-vicedecano-de-ingenieria-para-el-sector-externo	/es/noticias/nombramientos/juan-saldarriaga-vicedecano-de-ingenieria-para-el-sector-externo/
+Redirect	301	/noticias-series-canal-video-lista/65-s-tenemos-que-hablar/2700-dos-mujeres-y-una-vaca-una-trocha-movie-colombiana	/es/noticias/teatro-cine-y-msica/dos-mujeres-y-una-vaca-una-trocha-movie-colombiana/
+Redirect	301	/noticias-video-recientes-cana-video/40-v-cider/2890-la-riqueza-de-mompox-esta-en-su-gente-sus-tradiciones-y-sus-saberes	/es/noticias/desarrollo-regional/la-riqueza-de-mompox-esta-en-su-gente-sus-tradiciones-y-saberes/
+Redirect	301	/noticias/egresados/benjamin-villa-wiesner-grado-summa-cum-laude-2015-1	/es/noticias/grados/benjamin-villa-wiesner-grado-summa-cum-laude-20151/
+Redirect	301	/noticias/economia/iel-dinero-es-felicidad	/es/noticias/economia-y-negocios/el-dinero-es-felicidad-phillip-thompson-del-mit-boston-pregunta/
+Redirect	301	/noticias/ciencias-sociales/las-de-arriba-y-las-de-abajo	/es/noticias/antropologia/las-de-arriba-y-las-de-abajo/
+Redirect	301	/noticias/ingenieria/agua-para-la-paz-en-magdalena	/es/noticias/desarrollo-regional/agua-para-la-paz-en-magdalena/
+Redirect	301	/noticias/en-el-campus/los-andes-lamenta-el-fallecimiento-de-alberto-sarria-molina	/es/noticias/ingeniera/los-andes-lamenta-el-fallecimiento-de-alberto-sarria-molina/
+Redirect	301	/noticias/en-el-campus/juny-montoya-directora-del-nuevo-centro-de-etica	/es/noticias/nombramientos/juny-montoya-directora-del-nuevo-centro-de-Etica/
+Redirect	301	/noticias/ingenieria/premian-en-eu-a-egresado-por-diseno-de-estructuras-subterraneas	/es/noticias/egresados/premian-en-eu-a-egresado-por-diseno-de-estructuras-subterraneas/
+Redirect	301	/noticias/ingenieria/la-revista-de-ingenieria-se-renueva	/es/noticias/ingeniera/la-revista-de-ingenieria-se-renueva/
+Redirect	301	/noticias/en-el-campus/xxi-feria-de-practicas-y-laboral	/es/noticias/comunidad/el-mercado-laboral-en-la-feria-laboral-y-de-practicas/
+Redirect	301	/noticias/en-el-campus/carlos-francisco-rodriguez-vicedecano-academico-de-ingenieria	/es/noticias/ingeniera/carlos-francisco-rodriguez-vicedecano-academico-de-ingenieria/
+Redirect	301	/noticias/egresados/juan-david-hernandez-diaz-grado-summa-cum-laude-2015-1	/es/noticias/arquitectura-y-diseno/juan-david-hernandez-diaz-grado-summa-cum-laude-20151/
+Redirect	301	/noticias/informacion-general/ipodria-haber-sido-la-corte-suprema-un-actor-del-origen-del-conflicto	/es/noticias/gobierno-y-politica/corte-suprema-pudo-haber-sido-actor-del-origen-del-conflicto/
+Redirect	301	/component/content/article/383-desmovilizacion	/es/noticias/gobierno-y-politica/la-desmovilizacion-entre-el-escepticismo-y-la-esperanza/
+Redirect	301	/noticias-video-recientes-cana-video/54-v-donaciones-apoyo-financiero/2754-una-apuesta-estudiantil-por-la-paz	/es/noticias/filantropia/una-apuesta-estudiantil-por-la-paz/
+Redirect	301	/noticias/cider/los-desafios-de-la-reintegracion-de-jovenes-desmovilizados	/es/noticias/desarrollo-regional/los-desafios-de-la-reintegracion-de-jovenes-desmovilizados/
+Redirect	301	/noticias/en-el-campus/renovado-director-de-servicios-de-informacion-y-tecnologia	/es/noticias/nombramientos/renovado-director-de-servicios-de-informacion-y-tecnologia/
+Redirect	301	/noticias/nuevos-programas/decisiones-pensadas	/es/noticias/educacion/decisiones-pensadas/
+Redirect	301	/noticias/egresados/santiago-fajardo-pena-grado-summa-cum-laude-2015-1	/es/noticias/egresados/santiago-fajardo-pena-grado-summa-cum-laude-20151/
+Redirect	301	/noticias-video-recientes-cana-video/40-v-cider/2911-hoy-lanzamiento-de-la-nueva-maestria-en-genero	/es/noticias/educacion/lanzamiento-de-la-nueva-maestria-en-genero/
+Redirect	301	/noticias/artes-y-humanidades/qsi-no-eres-una-parte-del-cambio-eres-parte-del-problemaq	/es/noticias/gobierno-y-politica/si-no-eres-una-parte-del-cambio-eres-parte-del-problema/
+Redirect	301	/noticias/ciencias-sociales/temo-a-los-juicios-emanados-de-la-intolerancia-excombatiente-de-las-farc	/es/noticias/gobierno-y-politica/temo-a-los-juicios-emanados-de-la-intolerancia-excombatiente-de-las-farc/
+Redirect	301	/noticias/arquitectura-y-diseno/mejores-viviendas-para-los-mas-necesitados-es-el-reto-willy-drews	/es/noticias/en-el-campus/premio-vida-y-obra-cemex-2016-a-willy-drews/
+Redirect	301	/noticias/informacion-general/ies-usted-innovador-parte-2	/es/noticias/ingeniera/es-usted-innovador-parte-2/
+Redirect	301	/component/content/article/220-lanzamiento-del-portal-viaje-carpooling-para-la-universidad-de-los-andes	/es/noticias/en-el-campus/lanzamiento-del-portal-viaje-carpooling-para-la-universidad-de-los-andes/
+Redirect	301	/noticias/informacion-general/icomo-logran-sobrevivir-los-partidos-politicos-en-america-latina	/es/noticias/gobierno-y-politica/como-logran-sobrevivir-los-partidos-politicos-en-america-latina/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2722-congreso-internacional-de-diversidad-en-el-empleo-publico	/es/noticias/derecho/la-diversidad-es-estrategica-para-la-gestion-del-talento-humano/
+Redirect	301	/noticias-video-recientes-cana-video/39-v-economia/3004-titulos-colectivos-camino-para-proteger-comunidades-afro-en-el-pacifico	/es/noticias/derecho/titulos-colectivos-camino-para-proteger-comunidades-afro-en-el-pacifico/
+Redirect	301	/noticias/ingenieria/huerto-casa	/es/noticias/ingeniera/huertocasa/
+Redirect	301	/noticias/ciencias/agua-limpia-a-punta-de-algas	/es/noticias/ciencias-biolgicas/agua-limpia-a-punta-de-algas/
+Redirect	301	/component/content/article/643-expertos-internacionales-en-ingenieria-biomedica-se-reunieron-en-los-andes	/es/noticias/ingeniera/biomedica-con-la-mirada-en-el-futuro/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2859-asi-es-flujos-deseantes-la-exposicion-de-juan-fernando-herran	/es/noticias/asi-es-flujos-deseantes-la-exposicion-de-juan-fernando-herran/
+Redirect	301	/noticias/informacion-general/simon-ganitsky-white-grado-summa-cum-laude-2014-2	/es/noticias/grados/simon-ganitsky-white-grado-summa-cum-laude-20142/
+Redirect	301	/noticias/en-el-campus/renovado-nombramiento-de-gerente-del-campus-3	/es/noticias/en-el-campus/renovado-nombramiento-de-gerente-del-campus/
+Redirect	301	/noticias/ciencias-sociales/ael-proceso-de-paz-es-la-oportunidad-para-colombia-goeran-therborn	/es/noticias/gobierno-y-politica/el-proceso-de-paz-es-la-oportunidad-para-colombia%C2%92-goran-therborn/
+Redirect	301	/noticias/ingenieria/ciudad-de-mascotas	/es/noticias/economia-y-negocios/ciudad-de-mascotas/
+Redirect	301	/noticias/ciencias-sociales/psicologia-trnsdisciplinar-de-vanguardia	/es/noticias/psicologia/psicologia-transdisciplinar-de-vanguardia/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/1991-contratacion-publica-eficiente	/es/noticias/derecho/contratacion-publica-eficiente/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2744-tinariwen-el-blues-del-sahara	/es/noticias/teatro-cine-y-msica/tinariwen-el-blues-del-sahara/
+Redirect	301	/noticias/en-el-campus/renovado-nombramiento-de-decana-de-estudiantes	/es/noticias/en-el-campus/renovado-nombramiento-de-decana-de-estudiantes/
+Redirect	301	/noticias/escuela-de-gobierno-alberto-lleras-camargo/ique-vendra-despues-de-la-paz	/es/noticias/gobierno-y-politica/que-vendra-despues-de-la-paz/
+Redirect	301	/noticias/en-el-campus/daniel-bermudez-profesor-emerito	/es/noticias/comunidad/daniel-bermudez-profesor-emerito/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2465-miercoles-en-vivo-pedro-gomez-barrero-construyendo-suenos	/es/noticias/arquitectura-y-diseno/pedro-gomez-barrero-construyendo-suenos/
+Redirect	301	/component/content/article/757-premiadas-las-mejores-investigaciones-de-ciencias	/es/noticias/ciencias-biolgicas/como-volver-potable-el-agua-contaminada/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2045-qahi-estamos-pintadosq-antanas-mockus	/es/noticias/desarrollo-regional/ahi-estamos-pintados-antanas-mockus/
+Redirect	301	/noticias/en-el-campus/nuevo-director-del-cife	/es/noticias/educacion/nuevo-director-del-cife/
+Redirect	301	/noticias/informacion-general/los-alumnos-mas-pilos-de-los-colegios-de-colsubsidio-ingresaran-a-los-andes	/es/noticias/filantropia/los-alumnos-mas-pilos-de-los-colegios-de-colsubsidio-ingresaran-a-los-andes/
+Redirect	301	/noticias/informacion-general/a-las-puertas-de-la-innovacion	/es/noticias/economia-y-negocios/a-las-puertas-de-la-innovacion/
+Redirect	301	/noticias/arquitectura-y-diseno/edificio-de-transicion-en-proyecto-de-renovacion	/es/noticias/arquitectura-y-diseno/primer-edificio-de-renovacion-ciudad-can-diseno-de-profesor-uniandino/
+Redirect	301	/noticias/informacion-general/microelectronica-util-para-procesos-industriales	/es/noticias/ingeniera/microelectronica-para-procesos-industriales/
+Redirect	301	/noticias/ingenieria/ni-30-por-ciento-de-tierras-en-colombia-tiene-al-dia-informacion-catastral	/es/noticias/desarrollo-regional/menos-de-30--de-predios-en-colombia-tiene-al-dia-informacion-catastral/
+Redirect	301	/noticias/artes-y-humanidades/la-conversacion-debe-ser-sobre-historias-de-esperanza	/es/noticias/periodismo-y-comunicaciones/%C2%91la-conversacion-debe-ser-sobre-historias-de-esperanza%C2%92/
+Redirect	301	/noticias/en-el-campus/el-departamento-de-geociencias-tiene-nuevo-directos	/es/noticias/ingeniera/geociencias-tiene-nuevo-director/
+Redirect	301	/noticias/informacion-general/desarrollar-las-capacidades-humanas-una-posibilidad-con-las-practicas	/es/noticias/economia-y-negocios/desarrollar-las-capacidades-humanas-una-posibilidad-con-las-practicas/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2354-no-sobreviviriamos-sin-experiencias-emocionales	/es/noticias/psicologia/no-sobreviviriamos-sin-experiencias-emocionales/
+Redirect	301	/noticias/economia/en-busqueda-de-la-justicia-laboral	/es/noticias/historia-lenguaje-y-cultura/en-busqueda-de-la-justicia-laboral/
+Redirect	301	/noticias/ciencias-sociales/la-primera-infancia-en-la-mira-de-los-cientificos	/es/noticias/economia-y-negocios/la-primera-infancia-en-la-mira-de-los-cientificos/
+Redirect	301	/noticias/ingenieria/innovacion-y-emprendimiento	/es/noticias/ingeniera/innovacion-y-emprendimiento/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2335-la-ingenieria-y-su-papel-en-el-licenciamiento-ambiental	/es/noticias/ingeniera/la-ingenieria-y-su-papel-en-el-licenciamiento-ambiental/
+Redirect	301	/noticias/egresados/maria-camila-sarria-sanz-disenadora-preg20161	/es/noticias/grados/maria-camila-sarria-sanz-disenadora/
+Redirect	301	/component/content/article/586-la-universidad-de-los-andes-lamenta-el-fallecimiento-de-alvaro-camacho	/es/noticias/obituarios/fallecio-Alvaro-camacho-guizado/
+Redirect	301	/noticias/en-el-campus/nuevo-gerente-del-campus	/es/noticias/nombramientos/nuevo-gerente-del-campus/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2068-nos-sabemos-si-alguno-de-los-discipulos-era-mariconcito	/es/noticias/gobierno-y-politica/ser-homosexual-no-es-pecado/
+Redirect	301	/noticias/lofarticle/ique-se-esta-jugando-con-este-no	/es/noticias/gobierno-y-politica/que-se-esta-jugando-con-este-no/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/2334-retao-del-sistema-de-salud-colombiano-en-el-corto-plazo	/es/noticias/economia-y-negocios/retos-del-sistema-de-salud-colombiano-en-el-corto-plazo/
+Redirect	301	/noticias/escuela-de-gobierno-alberto-lleras-camargo/investigan-para-mejorar-el-talento-humano-en-lo-publico	/es/noticias/desarrollo-regional/como-mejorar-el-talento-humano-en-lo-publico/
+Redirect	301	/noticias/informacion-general/donde-queda-macondo	/es/noticias/educacion/donde-queda-macondo/
+Redirect	301	/noticias/informacion-general/maria-juliana-kairuz-correa-distincion-a-la-responsabilidad-social-2015-2	/es/noticias/grados/maria-juliana-kairuz-correa-distincion-a-la-responsabilidad-social-20152/
+Redirect	301	/noticias/en-el-campus/renovacion-en-la-facultad-de-ingenieria	/es/noticias/nombramientos/renovacion-en-ingenieria/
+Redirect	301	/noticias/ciencias-sociales/papas-buena-nota-para-ninos-mas-felices	/es/noticias/educacion/papas-buena-nota-para-ninos-mas-felices/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/2529-goncalo-m-tavares-presento-su-obra-enciclopedia	/es/noticias/idiomas-y-literatura/gonzalo-m-tavares-presento-su-obra-%C2%91enciclopedia%C2%92/
+Redirect	301	/noticias/ciencias-sociales/tras-la-pista-genetica-de-los-muiscas	/es/noticias/antropologia/tras-la-pista-genetica-de-los-muiscas/
+Redirect	301	/noticias/derecho/la-firma-un-momento-esencial-del-proceso-de-paz-pero-no-su-fin	/es/noticias/derecho/la-firma-un-momento-esencial-del-proceso-de-paz-pero-no-su-fin/
+Redirect	301	/noticias/cider/cider-40-anos-de-trabajo-por-el-desarrollo-de-colombia	/es/noticias/desarrollo-regional/cider-40-anos-de-trabajo-por-el-desarrollo-de-colombia/
+Redirect	301	/noticias/informacion-general/uniandes-acreditada-por-10-anos-mas	/es/noticias/en-el-campus/uniandes-acreditada-por-10-anos-mas/
+Redirect	301	/noticias/informacion-general/el-futuro-de-la-humanidad-es-la-imaginacion	/es/noticias/ingeniera/el-futuro-de-la-humanidad-es-la-imaginacion/
+Redirect	301	/noticias/en-el-campus/renovado-nombramiento-del-rector	/es/noticias/nombramientos/renovado-nombramiento-del-rector/
+Redirect	301	/noticias/en-el-campus/nombramientos-en-comite-directivo-de-uniandes	/es/noticias/nombramientos/nombramientos-en-comite-directivo/
+Redirect	301	/noticias-transmisiones-canal-video/68-t-transmisiones/1934-el-futuro-de-las-compensaciones-ambientales-en-colombia	/es/noticias/ambiente-y-sostenibilidad/el-futuro-de-las-compensaciones-ambientales-en-colombia/
+Redirect	301	/noticias/informacion-general/pablo-navas-se-posesiono-como-rector-de-los-andes	/es/noticias/comunidad/pablo-navas-se-posesiono-como-rector-de-los-andes/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2441-grados-medicina-2016-1-palabras-de-graduando-marco-edgar-ariza	/es/noticias/comunidad/palabras-de-graduando-marco-edgar-ariza/
+Redirect	301	/noticias/en-el-campus/harold-castro-es-nuevo-director-de-ingenieria-de-sistemas-y-computacion	/es/noticias/comunidad/harold-castro-director-de-ingenieria-de-sistemas-y-computacion/
+Redirect	301	/noticias/informacion-general/los-mejores-recibieron-grado-summa-cum-laude	/es/noticias/comunidad/los-mejores-recibieron-grado-summa-cum-laude/
+Redirect	301	/noticias-video-recientes-cana-video/34-v-derecho/2960-ciberespacio-ise-esta-usando-bien	/es/noticias/comunidad/ciberespacio-se-esta-usando-bien/
+Redirect	301	/noticias/economia/trabajan-con-las-manos	/es/noticias/comunidad/trabajan-con-las-manos/
+Redirect	301	/noticias/economia/francisco-azuero-se-posesiono-como-miembro-de-la-acce	/es/noticias/comunidad/francisco-azuero-se-posesiono-como-miembro-de-la-acce/
+Redirect	301	/noticias/informacion-general/francia-villabona-triana-grado-magna-cum-laude-2015-2	/es/noticias/comunidad/francia-villabona-triana-grado-magna-cum-laude-20152/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/2264-ique-ha-pasado-con-el-transporte-publico-en-bogota	/es/noticias/ambiente-y-sostenibilidad/por-que-ha-fallado-la-movilidad-en-bogota/
+Redirect	301	/noticias/derecho/el-regalo-prometido	/es/noticias/derecho/el-regalo-prometido/
+Redirect	301	/noticias-video-recientes-cana-video/39-v-economia/3005-impacto-de-titulos-colectivos-en-comunidades-negras-del-pacifico	/es/noticias/derecho/impacto-de-titulos-colectivos-en-comunidades-negras-del-pacifico/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2593-palabras-de-david-ricardo-luna-vinueza-graduando-2-preg20161	/es/noticias/derecho/no-podemos-olvidar-que-la-economia-es-una-ciencia-social-david-luna/
+Redirect	301	/noticias/informacion-general/estudio-indaga-relaciones-entre-comunidad-educativa-y-actores-de-la-guerra	/es/noticias/desarrollo-regional/afiliaciones-entre-las-comunidades-educativas-y-los-actores-de-la-guerra/
+Redirect	301	/noticias/informacion-general/refugiados-y-personas-merecedoras-de-proteccion-internacional	/es/noticias/derecho/refugiados-y-personas-merecedoras-de-proteccion-internacional/
+Redirect	301	/noticias/en-el-campus/distrito-da-luz-verde-a-plan-de-renovacion-urbanistica-en-las-aguas	/es/noticias/ambiente-y-sostenibilidad/luz-verde-a-triangulo-de-fenicia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2582-palabras-de-pablo-navas-preg20161	/es/noticias/comunidad/los-invito-a-considerar-el-servicio-publico-y-la-docencia-en-sus-vidas/
+Redirect	301	/noticias/economia/pascual-restrepo-gana-premio-portafolio-al-mejor-estudiante-universitario	/es/noticias/grados/pascual-restrepo-premio-portafolio-a-mejor-estudiante/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/2925-caribbean-new-style-san-andres-hecho-calipso	/es/noticias/teatro-cine-y-msica/caribbean-new-style-el-calipso-sanandresano-se-tomo-los-andes/
+Redirect	301	/noticias/informacion-general/sergio-armando-camelo-gomez-grado-summa-cum-laude-2014-2	/es/noticias/grados/sergio-armando-camelo-gomez-grado-summa-cum-laude-20142/
+Redirect	301	/component/content/article/622-nueva-maestria-en-arquitectura-de-tecnologias-de-informacion	/es/noticias/ingeniera/nueva-maestria-en-arquitecturas-de-ti/
+Redirect	301	/noticias/en-el-campus/carolina-angel	/es/noticias/nombramientos/nueva-directora-de-desarrollo-y-relaciones-publicas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2445-grados-medicina-2016-1-coro-universitario-interpreta-gaudeamus-igitur	/es/noticias/grados/coro-universitario-interpreta-gaudeamus-igitur/
+Redirect	301	/noticias/nuevos-programas/la-especialidad-videojuegos	/es/noticias/ingeniera/la-especialidad-videojuegos/
+Redirect	301	/component/content/article/818-juan-camilo-diaz-soto-grado-summa-cum-laude-2012-2	/es/noticias/grados/juan-camilo-diaz-soto-grado-%C2%91summa-cum-laude%C2%92-20122/
+Redirect	301	/noticias/arquitectura-y-diseno/mil-maneras-de-contar-una-historia	/es/noticias/arquitectura-y-diseno/mil-maneras-de-contar-una-historia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2591-palabras-de-laura-andrea-tapias-graduanda-preg20161	/es/noticias/grados/no-debemos-tener-miedo-a-quienes-piensan-diferente-laura-tapias/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2547-entrega-de-diplomas-primera-ceremonia-del-17-de-marzo-posg20161	/es/noticias/grados/entrega-de-diplomas-doctorados-y-maestrias-en-administracion-y-finanzas/
+Redirect	301	/noticias/derecho/aprender-a-ser-humano	/es/noticias/gobierno-y-politica/aprender-a-ser-humano/
+Redirect	301	/component/content/article/861-felipe-guhl-gana-premio-internacional	/es/noticias/ciencias-biolgicas/felipe-guhl-gana-premio-internacional/
+Redirect	301	/noticias/informacion-general/vicerrectoria-de-desarrollo-y-egresados	/es/noticias/nombramientos/vicerrectoria-de-desarrollo-y-egresados/
+Redirect	301	/noticias/ciencias-sociales/colombia-es-un-desafio-para-el-pensamiento	/es/noticias/gobierno-y-politica/colombia-es-un-desafio-para-el-pensamiento/
+RedirectMatch	301	/noticias/egresados/gabriel-duran-rehbein-medico-gr-med-20162(.*)	/es/noticias/grados/gabriel-duran-rehbein-medico/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1959-ceremonia-de-grados-de-medicina-2015-1-el-amor-y-los-suenos(.*)	/es/noticias/grados/ceremonia-de-grados-de-medicina-20151--el-amor-y-los-suenos/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2058-ceremonia-de-grados-de-posgrado-2015-1-graduandos-primera-ceremonia	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-graduandos-primera-ceremonia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2059-ceremonia-de-grados-de-posgrado-2015-1-graduandos-segunda-ceremonia	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-graduandos-segunda-ceremonia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2060-ceremonia-de-grados-de-posgrado-2015-1-graduandos-tercera-ceremonia	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-graduandos-tercera-ceremonia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2061-ceremonia-de-grados-de-posgrado-2015-1-graduandos-cuarta-ceremonia	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-graduandos-cuarta-ceremonia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1980-ceremonia-de-grados-de-pregrado-2015-1-graduandos-primera-ceremonia	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-graduandos-primera-ceremonia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1981-ceremonia-de-grados-de-pregrado-2015-1-graduandos-segunda-ceremonia	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-graduandos-segunda-ceremonia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1982-ceremonia-de-grados-de-pregrado-2015-1-graduandos-tercera-ceremonia	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-graduandos-tercera-ceremonia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1962-ceremonia-de-grados-de-medicina-2015-1-entrega-de-diplomas	/es/noticias/grados/ceremonia-de-grados-de-medicina-20151--entrega-de-diplomas/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1976-ceremonia-de-grados-de-pregrado-2015-1-gaudeamus-igitur(.*)	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-gaudeamus-igitur/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1977-ceremonia-de-grados-de-pregrado-2015-1-himno-nacional-de-la-republica(.*)	/es/noticias/campus-y-comunidad/ceremonia-de-grados-de-pregrado-2015-1-himno-de-republica/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1978-ceremonia-de-grados-de-pregrado-2015-1-himno-de-los-andes	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-himno-de-los-andes/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2056-ceremonia-de-grados-de-posgrado-2015-1-ser-egresado-uniandino	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-ser-egresado-uniandino/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2048-ceremonia-de-grados-de-posgrado-2015-1-el-compromiso-de-la-lectura(.*)	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-el-compromiso-de-la-lectura/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2049-ceremonia-de-grados-de-posgrado-2015-1-la-guerra-y-la-paz(.*)	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-la-guerra-y-la-paz/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2051-ceremonia-de-grados-de-posgrado-2015-1-un-mensaje-para-la-vida(.*)	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-un-mensaje-para-la-vida/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2054-ceremonia-de-grados-de-posgrado-2015-1-la-condicion-de-estudiante(.*)	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-la-condicion-de-estudiante/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1969-ceremonia-de-grados-de-pregrado-2015-1-un-nuevo-pais(.*)	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-un-nuevo-pais/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1971-ceremonia-de-grados-de-pregrado-2015-1-ser-personas-imprescindibles(.*)	/es/noticias/grados/ceremonia-de-grado-de-pregrado-20151-ser-personas-imprescindibles/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1958-ceremonia-de-grados-de-medicina-2015-1-el-impacto-de-la-educacion(.*)	/es/noticias/grados/ceremonia-de-grados-de-medicina-20151-el-impacto-de-la-educacion/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1960-ceremonia-de-grados-de-medicina-2015-1-la-educacion-medica(.*)	/es/noticias/grados/ceremonia-de-grados-de-medicina-20151-la-educacion-medica/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2057-ceremonia-de-grados-de-posgrado-2015-1-toma-de-juramento	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-toma-de-juramento/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1979-ceremonia-de-grados-de-pregrado-2015-1-toma-de-juramento	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-toma-de-juramento/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1961-ceremonia-de-grados-de-medicina-2015-1-toma-de-juramento(.*)	/es/noticias/campus-y-comunidad/toma-de-juramento-a-los-graduandos-grados-medicina-2016-1/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1975-ceremonia-de-grados-de-pregrado-2015-1-entrega-de-distinciones	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-entrega-de-distinciones/
+Redirect	301	/noticias/egresados/david-gomez-gil-grado-summa-cum-laude-2015-1	/es/noticias/grados/david-gomez-gil-grado-summa-cum-laude-20151/
+Redirect	301	/noticias/egresados/ana-lucia-castano-responsabilidad-social-universitaria-2015-1	/es/noticias/grados/ana-lucia-castano-responsabilidad-social-universitaria-20151/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2050-ceremonia-de-grados-de-posgrado-2015-1-una-colombia-mas-humana	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-una-colombia-mas-humana/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2052-ceremonia-de-grados-de-posgrado-2015-1-cinco-ensenanzas(.*)	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-cinco-ensenanzas/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2053-ceremonia-de-grados-de-posgrado-2015-1-hacer-realidad-un-sueno(.*)	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-hacer-realidad-un-sueno/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2055-ceremonia-de-grados-de-posgrado-2015-1-buscar-la-grandeza(.*)	/es/noticias/grados/ceremonia-de-grados-de-posgrado-20151-buscar-la-grandeza/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1972-ceremonia-de-grados-de-pregrado-2015-1-disfrutar-la-incertidumbre(.*)	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-disfrutar-la-incertidumbre/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/1973-ceremonia-de-grados-de-pregrado-2015-1-el-valor-de-la-diferencia(.*)	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-el-valor-de-la-diferencia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/1974-ceremonia-de-grados-de-pregrado-2015-1-narrar-la-vida	/es/noticias/grados/ceremonia-de-grados-de-pregrado-20151-narrar-la-vida/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2588-entrega-de-distinciones-preg20161	/es/noticias/grados/entrega-de-distinciones-a-la-excelencia-grados-de-pregrado-20161/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2587-toma-de-juramento-por-parte-de-los-graduandos-preg20161	/es/noticias/grados/ceremonia-de-grados-de-medicina-20151--toma-de-juramento/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2440-grados-medicina-2016-1-intervencion-rector-pablo-navas	/es/noticias/grados/intervencion-rector-pablo-navas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2442-grados-medicina-2016-1-toma-de-juramento-por-parte-de-los-graduandos	/es/noticias/comunidad/toma-de-juramento-por-parte-de-los-graduandos/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2444-grados-medicina-2016-1-palabras-orador-invitado-doctor-alberto-fergusson	/es/noticias/grados/palabras-del-orador-invitado-doctor-alberto-fergusson/
+Redirect	301	/noticias-video-recientes-cana-video/54-v-donaciones-apoyo-financiero/3045-asi-se-vivio-el-bingo-fopre-2016	/es/noticias/comunidad/asi-se-vivio-el-bingo-fopre-2016/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/3053-qtodo-profesor-universitario-tiene-que-ser-un-investigadorq-hernando-groot	/es/noticias/comunidad/todo-profesor-universitario-tiene-que-ser-un-investigador-hernando-groot/
+Redirect	301	/noticias/economia/la-reforma-tributaria-desde-el-lente-de-adam-smith	/es/noticias/economia-y-negocios/la-reforma-tributaria-desde-el-lente-de-adam-smith/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/3065-vivienda-universitaria-uniandes-cupos-disponibles	/es/noticias/comunidad/vivienda-universitaria-uniandes-cupos-disponibles/
+Redirect	301	/noticias/medicina/del-imperativo-hipocratico-al-mandato-burocratico-de-las-eps	/es/noticias/salud-y-medicina/del-imperativo-hipocratico-al-mandato-burocratico-de-las-eps/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/3067-le-educacion-como-motor-en-la-construccion-de-paz	/es/noticias/educacion/la-educacion-como-motor-en-la-construccion-de-paz/
+Redirect	301	/noticias/cider/qtodo-lo-que-genere-inequidad-debe-estar-en-el-acuerdoq	/es/noticias/desarrollo-regional/todo-lo-que-genere-inequidades-debe-estar-en-el-acuerdo-de-paz/
+Redirect	301	/noticias/ingenieria/dos-uniandinos-destacados-en-premio-nacional-a-la-innovacion-de-ecopetrol	/es/noticias/comunidad/dos-uniandinos-destacados-en-premio-nacional-a-la-innovacion-de-ecopetrol/
+Redirect	301	/noticias/en-el-campus/renovacion-de-decano-de-la-facultad-de-ciencias	/es/noticias/campus-y-comunidad/renovacion-decanatura-de-administracion/
+Redirect	301	/noticias-video-recientes-cana-video/39-v-economia/3072-politica-de-drogas-y-desarrollo-rural-en-tiempo-de-paz	/es/noticias/desarrollo-regional/politica-de-drogas-y-desarrollo-rural-en-tiempo-de-paz/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/3075-camiseta-blindada-hecha-en-colombia-gana-premio-de-diseno-en-alemania	/es/noticias/arquitectura-y-diseno/camiseta-blindada-hecha-en-colombia-gana-premio-de-diseno-en-alemania/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/3076-en-la-hacienda-el-noviciado-crece-un-nuevo-bosque	/es/noticias/ambiente-y-sostenibilidad/en-la-hacienda-el-noviciado-crece-un-nuevo-bosque/
+Redirect	301	/noticias/informacion-general/rechazo-a-la-violencia-de-genero	/es/noticias/comunidad/rechazo-a-la-violencia-de-genero/
+Redirect	301	/noticias-video-recientes-cana-video/34-v-derecho/3078-un-suspiro-de-libertad	/es/noticias/comunidad/un-suspiro-de-libertad/
+Redirect	301	/noticias-video-recientes-cana-video/33-v-ciencias-sociales/3079-el-miedo-a-la-paz	/es/noticias/antropologia/el-miedo-a-la-paz/
+Redirect	301	/noticias/artes-y-humanidades/los-futbolistas-cuentan-la-historia-de-colombia	/es/noticias/historia-lenguaje-y-cultura/los-futbolistas-cuentan-la-historia-de-colombia/
+Redirect	301	/noticias/ingenieria/ellos-ganaron-la-maraton-de-seguridad-de-la-informacion	/es/noticias/comunidad/ellos-ganaron-la-maraton-de-seguridad-de-la-informacion/
+Redirect	301	/component/content/article/336-nueva-vicerrectora-administrativa-y-financiera	/es/noticias/comunidad/nueva-vicerrectora-administrativa-y-financiera/
+Redirect	301	/noticias/informacion-general/ichiste-o-violencia	/es/noticias/comunidad/chiste-o-violencia/
+Redirect	301	/noticias/informacion-general/comunicado-de-rectoria	/es/noticias/comunidad/comunicado-de-rectoria/
+Redirect	301	/noticias/informacion-general/clases-a-la-calle-el-pais-se-estudia-al-aire-libre	/es/noticias/comunidad/clases-a-la-calle-el-pais-se-estudia-al-aire-libre/
+Redirect	301	/noticias/informacion-general/comunicado-del-consejo-estudiantil-uniandino	/es/noticias/comunidad/comunicado-del-consejo-estudiantil-uniandino/
+Redirect	301	/noticias/ingenieria/latinoamerica-tendra-asociacion-de-ciclismo-urbano	/es/noticias/ingeniera/latinoamerica-tendra-asociacion-de-ciclismo-urbano/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/3088-uniandinas-correran-la-primera-vuelta-a-colombia-femenina	/es/noticias/comunidad/uniandinas-correran-la-primera-vuelta-a-colombia-femenina/
+Redirect	301	/noticias/informacion-general/nueva-zelanda-una-economia-innovadora	/es/noticias/economia-y-negocios/nueva-zelanda-una-economia-innovadora/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/3092-sello-de-oro-para-biciparqueadero-de-uniandes-por-la-calidad-de-su-servicio	/es/noticias/comunidad/sello-de-oro-para-biciparqueadero-de-uniandes-por-la-calidad-de-su-servicio/
+Redirect	301	/noticias/artes-y-humanidades/facultad-de-artes-trabajara-para-proteger-bienes-patrimoniales-de-catedral	/es/noticias/historia-lenguaje-y-cultura/artes-y-humanidades-protegera-bienes-patrimoniales-de-catedral/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2872-entrega-de-diplomas-y-de-la-distincion-summa-cum-laude-gr-med-20162(.*)	/es/noticias/egresados/entrega-de-diplomas-y-de-la-distincion-summa-cum-laude/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2583-palabras-de-andres-mauricio-guiot-graduando-preg20161	/es/noticias/grados/debemos-ser-integros-y-responsables-colombia-lo-necesita/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2592-palabras-de-david-ricardo-luna-vinueza-graduando-1-preg20161	/es/noticias/grados/los-invito-a-rechazar-cualquier-tipo-de-violencia-el-arte-es-una-forma/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2596-palabras-del-padre-fernan-gonzalez-preg20161	/es/noticias/grados/la-paz-es-el-desafio-para-la-nueva-generacion-para-ustedes/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2581-himno-nacional-de-la-republica-de-colombia-preg20161	/es/noticias/grados/coro-uniandes-interpreta-himno-nacional-de-la-republica-de-colombia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2584-gaudeamus-igitur-preg20161	/es/noticias/grados/interpretacion-del-himno-tradicional-universitario-gaudeamus-igitur/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2590-himno-de-la-universidad-de-los-andes-preg20161	/es/noticias/grados/himno-de-la-universidad-de-los-andes-ceremonia-de-grados-de-pregrado/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2589-entrega-de-diplomas-primera-ceremonia-del-31-de-marzo-preg20161	/es/noticias/grados/entrega-de-diplomas-de-pregrado-en-ingenieria-i/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2594-entrega-de-diplomas-segunda-ceremonia-del-31-de-marzo-preg20161	/es/noticias/grados/entrega-de-diplomas-de-pregrado-de-ingenieria-ii/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2595-entrega-de-diplomas-tercera-ceremonia-del-31-de-marzo-preg20161	/es/noticias/entrega-de-diplomas-pregrado-en-musica-artes-ciencias-y-derecho/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2597-entrega-de-diplomas-primera-ceremonia-del-1-de-abril-preg20161	/es/noticias/grados/entrega-de-diplomas-de-pregrado-en-administracion-y-economia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2598-entrega-de-diplomas-segunda-ceremonia-del-1-de-abril-preg20161	/es/noticias/grados/entrega-de-diplomas-pregrado-de-ciencias-sociales-arquitectura-y-diseno/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2439-grados-de-medicina-2016-1-himno-nacional-de-la-republica-de-colombia	/es/noticias/grados/himno-nacional-de-la-republica-de-colombia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2443-grados-medicina-2016-1-acto-de-entrega-de-diplomas	/es/noticias/grados/acto-de-entrega-de-diplomas-grados-de-medicina-20161/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2553-entrega-de-diplomas-tercera-ceremonia-del-18-de-marzo-posg20161	/es/noticias/grados/entrega-de-diplomas-de-doctorado-en-ciencias-ciencias-sociales-y-artes/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2552-entrega-de-diplomas-segunda-ceremonia-del-18-de-marzo-posg20161	/es/noticias/grados/entrega-de-diplomas-maestrias-de-la-facultad-de-ingenieria-y-del-cider/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2551-entrega-de-diplomas-primera-ceremonia-del-18-de-marzo-posg20161	/es/noticias/grados/entrega-de-diplomas-grados-de-doctorados-y-maestrias-en-ingenieria/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2550-entrega-de-diplomas-tercera-ceremonia-del-17-de-marzo-posg20161	/es/noticias/grados/entrega-diplomas-derecho-arquitectura-economia-e-de-gobierno-y-medicina/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2549-entrega-de-diplomas-segunda-ceremonia-del-17-de-marzo-posg20161	/es/noticias/grados/entrega-de-diplomas-maestrias-en-administracion-y-educacion/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2548-himno-de-la-universidad-de-los-andes-posg20161(.*)	/es/noticias/grados/interpretacion-del-himno-de-la-universidad-de-los-andes/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2540-himno-nacional-de-la-republica-de-colombia-posg20161	/es/noticias/grados/himno-nacional-de-la-republica-de-colombia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2546-toma-de-juramento-por-parte-de-los-graduandos-posg20161	/es/noticias/grados/toma-de-juramento-a-los-graduandos/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2544-gaudeamus-igitur-posg20161	/es/noticias/grados/himno-universitario-gaudeamus-igitur/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2563-palabras-de-maria-cardenas-posg20161	/es/noticias/grados/debemos-preocuparnos-por-nuestras-diferencias/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2557-palabras-de-sebastian-estrada-posg20161	/es/noticias/ensenemos-aun-si-no-somos-profesores-seamos-mentores-sebastian-estrada/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2560-palabras-de-omar-franco-posg20161	/es/noticias/grados/tienen-una-vida-por-elegir-mentes-y-corazones-con-infinitas-cualidades/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2565-palabras-de-ivan-orozco-posg20161	/es/noticias/grados/el-mercado-laboral-necesita-ciudadanos-comprometidos/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2555-palabras-de-jose-dario-herrera-posg20161	/es/noticias/grados/no-se-conformen-con-seguir-instrucciones-ustedes-son-agentes-de-cambio/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2562-palabras-de-mary-mancera-graduanda-posg20161	/es/noticias/grados/no-olvidemos-la-parte-humana-que-nos-hace-especiales-mary-mancera/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2559-palabras-de-niyireth-porras-graduanda-posg20161	/es/noticias/grados/debemos-ser-integros-y-responsables-colombia-lo-necesita/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2564-palabras-de-heidy-yohana-narvaez-graduanda-posg20161	/es/noticias/grados/ningun-sacrificio-se-compara-con-la-mirada-de-orgullo-de-nuestros-padres/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2556-palabras-de-laura-betancur-graduanda-posg20161	/es/noticias/grados/hacer-un-posgrado-en-colombia-impone-una-responsabilidad-por-el-cambio/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2554-palabras-de-andrea-restreo-graduanda-posg20161	/es/noticias/grados/disciplina-exigencia-y-etica-pilares-profesionales-para-andrea-restrepo/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2543-palabras-de-andres-felipe-gomez-gil-graduando-posg20161	/es/noticias/grados/lo-que-logremos-por-los-demas-es-lo-que-nos-hace-mejores-personas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2542-palabras-zoe-nelson-graduanda-posg20161	/es/noticias/grados/ten-confianza-la-comparacion-es-una-trampa-que-limita/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2541-palabras-de-javier-serrano-posg20161	/es/noticias/grados/mejor-tratar-de-ser-parte-de-la-nueva-historia-del-pais-que-no-intentarlo/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2561-palabras-de-carl-langebaek-posg20161	/es/noticias/grados/sigan-estudiando-dediquen-tiempo-a-ensenar-y-no-se-alejen-de-lo-publico/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2558-palabras-de-pablo-navas-posg20161	/es/noticias/grados/palabras-del-rector-de-la-universidad-de-los-andes-pablo-navas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2247-grados-medicina-2015-2-himno-de-colombia	/es/noticias/grados/grados-medicina-20152--himno-de-colombia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2249-grados-medicina-2015-2-intervencion-rector-pablo-navas	/es/noticias/grados/grados-medicina-20152--intervencion-rector-pablo-navas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2252-grados-medicina-2015-2-intervencion-de-maria-paula-machecha-pulido	/es/noticias/grados/grados-medicina-20152--intervencion-de-maria-paula-mahecha-pulido/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2253-grados-medicina-2015-2-toma-de-juramento	/es/noticias/grados/grados-medicina-20152--toma-de-juramento/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2250-grados-medicina-2015-2-intervencion-juan-carlos-briceno	/es/noticias/grados/grados-medicina-20152--intervencion-juan-carlos-briceno/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2255-grados-medicina-2015-2-gaudeamus-igitur(.*)	/es/noticias/grados/grados-medicina-20152-gaudeamus-igitur/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2254-grados-medicina-2015-2-entrega-de-diplomas-a-los-graduandos	/es/noticias/grados/grados-medicina-20152--entrega-de-diplomas-a-los-graduandos/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2248-grados-medicina-2015-2-himno-uniandes(.*)	/es/noticias/grados/grados-medicina-20152-himno-uniandes/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2265-grados-de-pregrado-2015-2-himno-nacional-de-la-republica-de-colombia(.*)	/es/noticias/grados/grados-de-pregrado-20152-himno-nacional-de-la-republica-de-colombia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2266-grados-de-pregrado-2015-2-discurso-pablo-navas-del-2-de-octubre-de-2015	/es/noticias/grados/grados-de-pregrado-20152--discurso-pablo-navas-del-2-de-octubre-de-2015/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2267-grados-de-pregrado-2015-2-palabras-de-martin-velez-pardo	/es/noticias/grados/grados-de-pregrado-20152--palabras-de-martin-velez-pardo/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2268-grados-de-pregrado-2015-2-palabras-de-andres-felipe-rodriguez-martinez	/es/noticias/grados/grados-de-pregrado-20152--palabras-de-andres-felipe-rodriguez-martinez/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-bogota2-2010.html	/es/elca/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-armenia1-2010.html	/es/noticias/desarrollo-regional/sensatez-y-sentimientos/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-armenia2-2010.html	/es/noticias/desarrollo-regional/el-hombre-que-siempre-%C2%91cae-parado%C2%92/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-armenia3-2010.html	/es/noticias/desarrollo-regional/amar-sin-obstaculos/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-valle2-2010.html	/es/noticias/desarrollo-regional/inmigrantes-en-las-fronteras-del-destino/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-gramalote1-2010.html	/es/noticias/desarrollo-regional/el-pueblo-que-vuelve-a-nacer/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-antioquia1-2010.html	/es/noticias/desarrollo-regional/%C2%91o-es-el-futbol-o-es-el-estudio%C2%92/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-cordoba1-2010.html	/es/noticias/desarrollo-regional/don-%C2%91joso%C2%92-retrato-hablado/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-boyaca1-2010.html	/es/noticias/desarrollo-regional/las-ninas-de-simijaca/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-barranca1-2010.html	/es/noticias/desarrollo-regional/%C2%91en-boca-cerrada-no-entran-balas%C2%92/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-antioquia2-2010.html	/es/noticias/desarrollo-regional/los-hilos-de-la-vida/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-boyaca3-2010.html	/es/noticias/desarrollo-regional/%C2%91que-sea-lo-que-dios-quiera%C2%92/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-gramalote4-2011.html	/es/noticias/desarrollo-regional/el-invierno-que-no-pudo-borrar-los-suenos/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-bogota3-2014.html	/es/noticias/desarrollo-regional/como-cambia-la-vida-de-una-familia-en-cuatro-anos/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-gramalote5-2015.html	/es/noticias/desarrollo-regional/gramalote-vive-las-voces-de-la-elca/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-ptenacional1-2015.html	/es/noticias/desarrollo-regional/la-familia-que-trabaja-para-pagar-una-lavadora/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-bogota4-2014.html	/es/noticias/desarrollo-regional/con-10-mil-pesos-diarios-vive-una-familia-en-bosa/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-barranca2-2015.html	/es/noticias/desarrollo-regional/la-lucha-de-los-desplazados-en-barranca/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-armenia5-2015.html	/es/noticias/desarrollo-regional/como-se-rompen-las-cadenas-familiares-de-machismo/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-antioquia4-2015.html	/es/noticias/desarrollo-regional/cristian-moreno-el-joven-que-jugo-con-james-rodriguez/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-gramalote6-2015.html	/es/noticias/desarrollo-regional/%C2%91el-gran-arbol%C2%92-un-cuento-para-gramalote/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/index-elca.html	/es/noticias/desarrollo-regional/cuando-la-vejez-la-soledad-y-la-pobreza-se-juntan/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-infancia1-2015.html	/es/noticias/desarrollo-regional/suenos-de-infancia-datos-sobre-ninez-en-colombia/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-primerainfancia1-2015.html	/es/noticias/desarrollo-regional/primera-infancia-colores-letras-y-numeros/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-encuesta5-2015.html	/es/noticias/desarrollo-regional/de-vuelta-por-colombia/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-credito1-2015.html	/es/noticias/desarrollo-regional/por-que-se-endeudan-los-colombianos/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-encuesta1-2010.html	/es/noticias/desarrollo-regional/como-nos-cambia-la-vida/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-encuesta2-2010.html	/es/noticias/desarrollo-regional/%C2%91nadie-me-conoce-la-pobreza-del-bolsillo%C2%92/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-bogota1-2011.html	/es/noticias/desarrollo-regional/sonar-en-tren-sonar-en-avion/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-vivienda1-2010.html	/es/noticias/desarrollo-regional/%C2%91si-me-tuviera-que-ir-me-llevaria-mi-casa%C2%92/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internacuentas-oficios1-2011.html	/es/noticias/desarrollo-regional/que-camello/
+Redirect	301	/xplorer/especiales/noticias/historiasdevida/internahistorias-gramalote3-2010.html	/es/noticias/desarrollo-regional/un-futuro-sin-falla/
+Redirect	301	/noticias-video-recientes-cana-video/45-v-informacion-general/3123-ifutbol-fenicia	/es/noticias/comunidad/el-microfutbol-une-a-los-andes-y-a-sus-vecinos/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2875-palabras-de-pablo-navas-rector-de-la-universidad-de-los-andes-gr-med-20162(.*)	/es/noticias/egresados/sigan-cultivando-y-fortaleciendo-su-espiritu-de-servicio/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2876-palabras-de-gabriel-alberto-duran-rehbein-gr-med-20162(.*)	/es/noticias/egresados/nuestra-historia-como-medicos-va-a-ser-de-decisiones/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2869-gaudeamus-igitur-gr-med-20162(.*)	/es/noticias/egresados/gaudeamus-igitur-himno-tradicional-universitario/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2878-palabras-de-la-doctora-helena-groot-de-restrepo-gr-med-20162(.*)	/es/noticias/egresados/%C2%93enriquecerme-con-su-entusiasmo-y-contagiarme-de-su-juventud/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2871-toma-de-juramento-a-los-graduandos-gr-med-20162(.*)	/es/noticias/grados/toma-de-juramento-a-los-graduandos/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2873-himno-de-la-universidad-de-los-andes-gr-med-20162(.*)	/es/noticias/egresados/himno-de-la-universidad-de-los-andes/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3006-himno-nacional-de-la-republica-de-colombia-preg20162(.*)	/es/noticias/grados/himno-nacional-de-la-republica-de-colombia/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3009-gaudeamus-igitur-preg20162(.*)	/es/noticias/egresados/himno-tradicional-universitario-¶?gaudeamus-igitur¶?/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3010-toma-del-juramento-a-los-graduandos-preg20162(.*)	/es/noticias/egresados/rector-hace-toma-de-juramento-a-los-graduandos/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3013-himno-de-la-universidad-de-los-andes-preg20162(.*)	/es/noticias/egresados/el-coro-interpreta-el-himno-de-la-universidad-de-los-andes/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3007-palabras-pablo-navas-preg20162(.*)	/es/noticias/esta-en-sus-manos-el-desenlace-de-nuestra-historia/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3008-palabras-de-angela-maria-castaneda-oviedo-preg20162(.*)	/es/noticias/egresados/palabras-de-Angela-castaneda-graduanda-de-ing-electrica/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3016-palabras-de-gleidys-margoth-blanco-cordoba-preg20162(.*)	/es/noticias/egresados/de-nosotros-depende-que-tan-sublime-sea-nuestra-historia/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3018-palabras-de-luis-alejandro-rojas-bernal-derecho-preg20162(.*)	/es/noticias/egresados/el-sueno-de-nuestra-generacion-la-paz-no-es-utopia/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3023-palabras-de-gabriela-grisales-salcedo-preg20162(.*)	/es/noticias/egresados/la-teoria-es-esteril-sin-la-practica-gabriela-grisales/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3012-entrega-de-diplomas-primera-ceremonia-del-13-de-octubre-preg20162(.*)	/es/noticias/egresados/entrega-de-diplomas-de-ingenieria/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3017-entrega-de-diplomas-segunda-ceremonia-del-13-de-octubre-preg20162(.*)	/es/noticias/egresados/entrega-de-diplomas-de-ingenieria-ii/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3019-entrega-de-diplomas-tercera-ceremonia-del-13-de-octubre-preg20162(.*)	/es/noticias/egresados/entrega-diplomas-de-arquitectura-y-diseno-artes-y-humanidades/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3024-entrega-de-diplomas-segunda-ceremonia-del-14-de-octubre-preg20162(.*)	/es/noticias/entrega-de-diplomas-de-ciencias-y-ciencias-sociales/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3021-entrega-de-diplomas-primera-ceremonia-del-14-de-octubre-preg20162(.*)	/es/noticias/entrega-de-diplomas-administracion-economia-y-asuntos-publicos/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3011-entrega-de-distinciones-preg20162(.*)	/es/noticias/egresados/entrega-de-distinciones-de-pregrado-20162/
+RedirectMatch	301	/noticias/egresados/gleidys-margoth-blanco-cordoba-responsabilidad-social-preg20162(.*)	/es/noticias/egresados/gleidys-margoth-blanco-responsabilidad-social-universitaria/
+RedirectMatch	301	/noticias/egresados/luis-alejandro-rojas-bernal-summa-cum-laude-de-economia-y-derecho-preg2016(.*)	/es/noticias/egresados/luis-alejandro-rojas-bernal-summa-cum-laude-de-economia-y-derecho/
+RedirectMatch	301	/noticias/egresados/angela-maria-castaneda-oviedo-summa-cum-laude-de-ingenieria-preg20162(.*)	/es/noticias/egresados/Angela-maria-castaneda-oviedo-summa-cum-laude-de-ingenieria/
+RedirectMatch	301	/noticias/egresados/simona-gallego-llano-summa-cum-laude-de-administracion-preg20162(.*)	/es/noticias/egresados/simona-gallego-llano-summa-cum-laude-de-administracion/
+RedirectMatch	301	/noticias/egresados/felipe-suarez-colmenares-summa-cum-laude-de-ingenieria-preg20162(.*)	/es/noticias/egresados/felipe-suarez-colmenares-summa-cum-laude-de-ingenieria/
+RedirectMatch	301	/noticias/egresados/emilio-lehoucq-mazuera-summa-cum-laude-de-derecho-preg20162(.*)	/es/noticias/egresados/emilio-lehoucq-mazuera-summa-cum-laude-de-derecho/
+RedirectMatch	301	/noticias/egresados/gabriela-grisales-salcedo-summa-cum-laude-de-ciencias-sociales-preg20162(.*)	/es/noticias/egresados/gabriela-grisales-salcedo-summa-cum-laude-de-ciencias-sociales/
+RedirectMatch	301	/noticias/egresados/juan-camilo-luna-rios-magna-cum-laude-de-derecho-preg20162(.*)	/es/noticias/egresados/juan-camilo-luna-rios-magna-cum-laude-de-derecho/
+RedirectMatch	301	/noticias/egresados/federico-gonzalez-rodriguez-magna-cum-laude-de-economia-preg20162(.*)	/es/noticias/egresados/federico-gonzalez-rodriguez-magna-cum-laude-de-economia/
+RedirectMatch	301	/noticias/egresados/jose-miguel-suarez-lopera-magna-cum-laude-de-ingenieria-preg20162(.*)	/es/noticias/egresados/jose-miguel-suarez-lopera-magna-cum-laude-de-ingenieria/
+RedirectMatch	301	/noticias/egresados/liliana-maria-guerrero-delgado-magna-cum-laude-de-administracion-preg20162(.*)	/es/noticias/egresados/liliana-maria-guerrero-delgado-magna-cum-laude-de-administracion/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3032-himno-nacional-interpretado-por-el-coro-uniandes(.*)	/es/noticias/egresados/himno-nacional-interpretado-por-el-coro-uniandes/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3033-el-coro-interpreta-gaudeamus-igitur(.*)	/es/noticias/egresados/el-coro-interpreta-gaudeamus-igitur/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3034-toma-de-juramento-a-graduandos-de-posgrado(.*)	/es/noticias/egresados/toma-de-juramento-a-graduandos-de-posgrado/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3035-el-coro-interpreta-el-himno-de-la-universidad-de-los-andes(.*)	/es/noticias/egresados/el-coro-interpreta-el-himno-de-la-universidad-de-los-andes/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3036-qaprovechen-el-conocimiento-practiquen-valores-y-liderenq-javier-serrano(.*)	/es/noticias/egresados/aprovechen-el-conocimiento-practiquen-valores-y-lideren/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3037-qhagamos-la-mochila-de-la-vida-mas-livianaq-elkin-cetina(.*)	/es/noticias/egresados/hagamos-la-mochila-de-la-vida-mas-liviana-elkin-cetina/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3038-qsomos-una-mezcla-de-pasion-entusiasmo-ganas-y-esfuerzoq-adriana-senior(.*)	/es/noticias/egresados/somos-una-mezcla-de-pasion-entusiasmo-ganas-y-esfuerzo/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3039-qes-por-medio-del-dialogo-que-nos-visibilizamos-mutuamenteq-andrea-luque(.*)	/es/noticias/egresados/es-por-medio-del-dialogo-que-nos-visibilizamos-mutuamente/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3040-qque-su-proposito-sea-aportar-su-trabajo-con-grandezaq-konrad-brunner(.*)	/es/noticias/egresados/que-su-proposito-sea-aportar-su-trabajo-con-grandeza-k-brunner/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3041-qcolombia-no-puede-reducir-presupuesto-en-investigacionq-silvia-restrepo(.*)	/es/noticias/egresados/colombia-no-puede-reducir-presupuesto-en-investigacion/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3106-qseamos-inspiracion-para-quienes-vienen-detrasq-maria-tangarife(.*)	/es/noticias/egresados/seamos-una-inspiracion-para-quienes-vienen-detras-maria-t/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3044-qvayan-mas-alla-del-deber-personal-y-profesionalq-eduardo-behrentz(.*)	/es/noticias/egresados/vayan-mas-alla-del-deber--personal-y-profesional--e--behrentz/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3047-qsin-transformar-opciones-de-desarrollo-la-paz-sera-esquivaq-j-acevedo(.*)	/es/noticias/egresados/sin-transformar-opciones-de-desarrollo-la-paz-sera-esquiva/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3048-qsigamos-formandonos-por-siempre-para-proponer-solucionesq-andrea-buitrago(.*)	/es/noticias/egresados/sigamos-formandonos-por-siempre-para-proponer-soluciones/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3049-qen-lugar-de-las-dificultades-vean-los-desafiosq-francisco-rueda(.*)	/es/noticias/en-lugar-de-las-dificultades-vean-los-desafios-francisco-rueda/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3050-qaprovechen-sus-conocimientos-para-despertar-interesq-carl-langebaek(.*)	/es/noticias/egresados/aprovechen-sus-conocimientos-para-despertar-interes-c-langebaek/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3054-qpromover-el-aprendizaje-autentico-me-llevo-a-ser-autenticaq-betsy-perafan(.*)	/es/noticias/egresados/promover-el-aprendizaje-autentico-me-llevo-a-ser-autentica/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3055-qser-uniandino-es-tener-una-marca-de-altisima-calidadq-miguel-rueda(.*)	/es/noticias/egresados/ser-uniandino-es-tener-una-marca-de-altisima-calidad--m-rueda/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3057-entrega-de-diplomas-de-grados-de-maestrias-en-administracion(.*)	/es/noticias/egresados/entrega-de-diplomas-de-grados-de-maestrias-en-administracion/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3058-entrega-diplomas-maestrias-en-admon-arquitectura-y-diseno-y-derecho(.*)	/es/noticias/egresados/entrega-diplomas-maestrias-en-admon-arquitectura-y-diseno-y-derecho/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3059-entrega-diplomas-posgrados-ciencias-economia-escuela-de-gob-y-medicina(.*)	/es/noticias/egresados/entrega-diplomas-posgrados-ciencias-economia-escuela-de-gob-y-medicina/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3060-entrega-de-diplomas-de-posgrados-en-ingenieria(.*)	/es/noticias/entrega-de-diplomas-de-posgrados-en-ingenieria/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3061-entrega-diplomas-de-posgrado-facultad-ingenieria-y-cider(.*)	/es/noticias/egresados/entrega-diplomas-de-posgrado-facultad-ingenieria-y-cider/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3062-entrega-de-diplomas-de-posgrados-facultad-de-educacion(.*)	/es/noticias/entrega-de-diplomas-de-posgrados-facultad-de-educacion/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/3063-entrega-diplomas-posgrado-facultad-ciencias-sociales-y-artes-y-humanidades(.*)	/es/noticias/egresados/entrega-diplomas-posgrado-ciencias-sociales-y-artes-y-humanidades/
+Redirect	301	/noticias/ingenieria/medalla-de-oro-a-eduardo-aldana	/es/noticias/ingeniera/profesor-eduardo-aldana-recibio-medalla-de-oro/
+Redirect	301	/noticias/en-el-campus/manuel-rodriguez-becerra-profesor-emerito	/es/noticias/nombramientos/manuel-rodriguez-becerra-profesor-emerito/
+Redirect	301	/noticias-video-recientes-cana-video/33-v-ciencias-sociales/3142-experiencias-de-una-caravana-de-paz-que-paso-por-colombia	/es/noticias/gobierno-y-politica/experiencias-de-una-caravana-de-paz-que-paso-por-colombia/
+Redirect	301	/noticias/en-el-campus/renuevan-nombramiento-en-antropologia	/es/noticias/antropologia/renuevan-nombramiento-en-antropologia/
+Redirect	301	/noticias/donaciones-apoyo-financiero/egresados-unidos-por-quiero-estudiar	/es/noticias/filantropia/egresados-unidos-por-quiero-estudiar/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/3133-estudiantes-fabrican-patinetas-electricas-para-movilizarse-en-bogota	/es/noticias/ingeniera/estudiantes-fabrican-patinetas-electricas-para-movilizarse-en-bogota/
+Redirect	301	/noticias-video-recientes-cana-video/35-v-ingenieria/3132-icual-es-el-mejor-modos-de-transporte-para-llegar-a-los-andes	/es/noticias/ingeniera/cual-es-el-mejor-modo-de-transporte-para-llegar-a-los-andes/
+Redirect	301	/noticias/informacion-general/los-andes-se-adelanta-a-la-noche-de-las-velitas	/es/noticias/en-el-campus/los-andes-se-adelanta-a-la-noche-de-las-velitas/
+Redirect	301	/noticias/informacion-general/uniandes-participa-en-la-feria-del-libro-de-guadalajara	/es/noticias/idiomas-y-literatura/uniandes-participa-en-la-feria-del-libro-de-guadalajara/
+Redirect	301	/noticias/ingenieria/carlos-molano-en-la-cumbre-de-las-aguas-subterraneas	/es/noticias/ingeniera/carlos-molano-en-la-cumbre-de-las-aguas-subterraneas/
+Redirect	301	/noticias-video-recientes-cana-video/34-v-derecho/3124-proyecto-de-los-andes-con-persona-privadas-de-la-libertad-gana-concurso-del	/es/noticias/gobierno-y-politica/proyecto-de-los-andes-con-privados-de-la-libertad-gana-concurso-del-bid/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2269-grados-de-pregrado-2015-2-palabras-de-lina-maria-mancipe-castro	/es/noticias/grados/grados-de-pregrado-20152--palabras-de-lina-maria-mancipe-castro/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2270-grados-de-pregrado-2015-2-palabras-de-ana-maria-baron	/es/noticias/grados/grados-de-pregrado-20152--palabras-de-ana-maria-baron/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2271-grados-de-pregrado-2015-2-gaudeamus-igitur(.*)	/es/noticias/grados/grados-de-pregrado-20152--gaudeamus-igitur/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2272-grados-de-pregrado-2015-2-palabras-de-ana-maria-ibanez-oradora-invitada	/es/noticias/grados/grados-de-pregrado-20152--palabras-de-ana-maria-ibanez-oradora-invitada/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2273-grados-de-pregrado-2015-2-palabras-de-jaime-cavelier-orador-invitado	/es/noticias/grados/grados-de-pregrado-20152--palabras-de-jaime-cavelier-orador-invitado/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2274-grados-de-pregrado-2015-2-toma-de-juramento-a-graduandos	/es/noticias/grados/grados-de-pregrado-20152--toma-de-juramento-a-graduandos/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2275-grados-de-pregrado-2015-2-entrega-de-distinciones-y-summa-cum-laude	/es/noticias/grados/grados-de-pregrado-20152--entrega-de-distinciones-y-summa-cum-laude/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2276-grados-de-pregrado-2015-2-primera-entrega-de-diplomas	/es/noticias/grados/grados-de-pregrado-20152--primera-entrega-de-diplomas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2277-grados-de-pregrado-2015-2-segunda-entrega-de-diplomas	/es/noticias/grados/grados-de-pregrado-20152--segunda-entrega-de-diplomas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2278-grados-de-pregrado-2015-2-tercera-entrega-de-diplomas	/es/noticias/grados/grados-de-pregrado-20152--tercera-entrega-de-diplomas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2279-grados-de-pregrado-2015-2-cuarta-entrega-de-diplomas	/es/noticias/grados/grados-de-pregrado-20152--cuarta-entrega-de-diplomas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2280-grados-de-pregrado-2015-2-quinta-entrega-de-diplomas	/es/noticias/grados/grados-de-pregrado-20152--quinta-entrega-de-diplomas/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2281-grados-de-pregrado-2015-2-himno-de-la-universidad-de-los-andes(.*)	/es/noticias/grados/grados-de-pregrado-20152--himno-de-la-universidad-de-los-andes/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2287-ceremonias-de-grado-de-posgrado-2015-2-himno-de-colombia	/es/noticias/grados/grados-de-posgrado-20152--himno-nacional-de-la-republica-de-colombia/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2288-grados-de-posgrado-2015-2-palabras-de-pablo-navas-rector-de-los-andes	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-pablo-navas-rector-de-los-andes/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2289-grados-de-posgrado-2015-2-palabras-de-carl-langebaek(.*)	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-carl-langebaek/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2290-grados-de-posgrado-2015-2-palabras-de-silvia-restrepo	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-silvia-restrepo/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2304-grados-de-posgrado-2015-2-palabras-de-carlos-arturo-montoya-londono	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-carlos-arturo-montoya-londono/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2305-grados-de-posgrado-2015-2-palabras-de-martha-yaneth-duarte-rodriguez	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-martha-yaneth-duarte-rodriguez/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2306-grados-de-posgrado-2015-2-palabras-de-francisco-alfonso-galvis-lopez	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-francisco-alfonso-galvis-lopez/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2307-grados-de-posgrado-2015-2-palabras-de-juan-camilo-chaves-rodriguez	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-juan-chaves-y-lina-tono/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2309-grados-de-posgrado-2015-2-palabras-de-hernando-bayona-rodriguez	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-hernando-bayona-rodriguez/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2310-grados-de-posgrado-2015-2-gaudeamus-igitur(.*)	/es/noticias/grados/grados-de-posgrado-20152--gaudeamus-igitur/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2311-grados-de-posgrado-2015-2-palabras-de-juan-carlos-martinez-navas(.*)	/es/noticias/grados/grados-de-posgrado20152--palabras-de-juan-carlos-martinez-navas/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2312-grados-de-posgrado-2015-2-palabras-de-liliana-baena-giraldo	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-liliana-baena-giraldo/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2313-grados-de-posgrado-2015-2-palabras-de-eduardo-pizano	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-eduardo-pizano/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2314-grados-de-posgrado-2015-2-palabras-de-angelika-rettberg(.*)	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-angellika-rettberg/
+RedirectMatch	301	/noticias-video-recientes-cana-video/42-v-egresados/2315-grados-de-posgrado-2015-2-palabras-de-juny-montoya(.*)	/es/noticias/grados/grados-de-posgrado-20152--palabras-de-juny-montoya/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2316-grados-de-posgrado-2015-2-toma-de-juramento-a-los-graduandos	/es/noticias/grados/grados-de-posgrado-20152--toma-de-juramento-a-los-graduandos/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2317-grados-de-posgrado-2015-2-entrega-de-diplomas-primera-ceremonia	/es/noticias/grados/grados-de-posgrado-20152--grados-doctorado-y-maestria-en-administracion/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2318-grados-de-posgrado-2015-2-entrega-de-diplomas-segunda-ceremonia	/es/noticias/grados/grados-de-posgrado-20152--grados-maestrias-en-administracion-y-derecho/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2320-grados-de-posgrado-2015-2-entrega-de-diplomas-tercera-ceremonia	/es/noticias/grados/grados-de-posgrado-20152--entrega-de-diplomas-maestrias-en-ingenieria/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2321-grados-de-posgrado-2015-2-entrega-de-diplomas-cuarta-ceremonia	/es/noticias/grados/grados-de-posgrado-20152--doctorado-de-ciencias-sociales-y-maestrias/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2322-grados-de-posgrado-2015-2-entrega-de-diplomas-quinta-ceremonia	/es/noticias/grados/grados-de-posgrado-20152--doctorados-de-economia-y-cife-y-maestrias/
+Redirect	301	/noticias-video-recientes-cana-video/42-v-egresados/2323-grados-de-posgrado-2015-2-himno-de-los-andes	/es/noticias/grados/grados-de-posgrado-20152--himno-de-los-andes/
+RedirectMatch	301	/noticias/egresados/laura-andrea-tapias-martinez-ingeniera-industrial-preg20161(.*)	/es/noticias/grados/laura-andrea-tapias-martinez-ingeniera-industrial/
+Redirect	301	/noticias-video-recientes-cana-video/37-v-arquitectura-y-diseno/3107-pazabordo-la-chiva-de-la-paz-que-recorre-el-pais	/es/noticias/arquitectura-y-diseno/pazabordo-la-chiva-de-la-paz-que-recorre-el-pais/
+Redirect	301	/noticias/artes-y-humanidades/la-orquesta-de-los-andes-celebra-sus-10-anos	/es/noticias/en-el-campus/la-orquesta-de-los-andes-celebra-sus-10-anos/
+Redirect	301	/noticias/en-el-campus/renovacion-en-decanatura-de-administracion	/es/noticias/nombramientos/renovacion-en-decanatura-de-administracion/
+Redirect	301	/noticias/lofarticle/mencion-de-honor-a-proyecto-uniandino-de-ingenieria-quimica	/es/noticias/ingeniera/mencion-de-honor-a-proyecto-uniandino-de-ingenieria-quimica/
+Redirect	301	/noticias/cider/llega-una-nueva-firma-del-acuerdo-de-paz-y-urge-que-se-implemente-pronto	/es/noticias/gobierno-y-politica/llega-una-nueva-firma-del-acuerdo-de-paz-y-urge-que-se-implemente-pronto/
+Redirect	301	/noticias/economia/uniandina-fue-becarias-de-cumbre-de-liderazgo-hesselbein	/es/noticias/economia-y-negocios/uniandina-fue-becaria-de-cumbre-de-liderazgo-hesselbein/
+Redirect	301	/noticias/informacion-general/nueve-profesores-de-los-andes-reconocidos-como-investigadores-emeritos	/es/noticias/premios-y-reconocimientos/nueve-profesores-de-los-andes-reconocidos-como-investigadores-emeritos/
+Redirect	301	/noticias/administracion/facultad-de-administracion-puesto-3-en-ranking-de-americaeconomia	/es/noticias/economia-y-negocios/facultad-de-administracion-puesto-3-en-ranking-de-americaeconomia/
+Redirect	301	/noticias-video-recientes-cana-video/24-v-artes-y-humanidades/3136-qa-toda-costaq-un-album-de-jazz-inspirado-en-vivencias-en-los-andes	/es/noticias/teatro-cine-y-musica/a-toda-costa-album-de-jazz-inspirado-en-vivencias-en-los-andes/
+Redirect	301	/institucional/profesores-emeritos/profesores-emeritos /es/noticias/en-el-campus/profesores-emeritos
+

@@ -1,0 +1,1 @@
+function loadNews(tid){console.log(tid);jQuery.ajax({url:'/news_refresh',type:'POST',data:{id:tid},success:function(response){console.log(response);}});};

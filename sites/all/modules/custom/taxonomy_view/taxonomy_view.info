@@ -1,0 +1,5 @@
+name = "Vista de taxonomias"
+description = "Este modulo permite personalizar como se muetran los resultados de las taxonomias."
+package = CDI
+core = 7.x
+version = "7.x-1.0"

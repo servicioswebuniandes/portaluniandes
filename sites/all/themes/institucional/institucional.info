@@ -1,0 +1,30 @@
+name = Institucional
+description = Subtema de bootstrap
+core = 7.x
+base theme = bootstrap
+
+;; ADD JS FILES ;;
+scripts[] = js/jquery.flexslider-min.js
+scripts[] = js/jquery.bxslider.js
+scripts[] = js/owl.carousel.min.js
+scripts[] = js/hammer.min.js
+scripts[] = js/functions.js
+scripts[] = js/scripts_back.js
+scripts[] = js/get_news.js
+scripts[] = js/slick-institucional.js
+scripts[] = js/custom.js
+
+;; ADD CSS FILES ;;
+stylesheets[all][] = css/flexslider.css
+stylesheets[all][] = css/normalize-institucional.css
+stylesheets[all][] = css/jquery.bxslider.css
+stylesheets[all][] = css/owl.carousel.css
+stylesheets[all][] = css/owl.theme.css
+stylesheets[all][] = css/owl.transitions.css
+stylesheets[all][] = css/styles.css
+stylesheets[all][] = css/styles_2.css
+stylesheets[all][] = css/styles_3.css
+stylesheets[all][] = css/custom.css
+
+
+

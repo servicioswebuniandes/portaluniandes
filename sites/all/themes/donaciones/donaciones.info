@@ -1,0 +1,29 @@
+name = Donaciones
+description = Subtema de bootstrap
+core = 7.x
+base theme = bootstrap
+
+exclude[css][] = sites/all/themes/bootstrap/bootstrap/css/custom.css
+exclude[css][] = sites/all/themes/bootstrap/bootstrap/css/fonts.css
+exclude[css][] = sites/all/themes/bootstrap/bootstrap/css/normalize-institucional.css
+exclude[js][] = 'sites/all/themes/bootstrap/bootstrap/js/slick-institucional.js'
+exclude[js][] = 'sites/all/themes/bootstrap/bootstrap/js/custom.js'
+
+;; ADD JS FILES ;;
+scripts[] = js/slick.js
+scripts[] = js/custom.js
+scripts[] = js/menu.js
+scripts[] = js/custom_2.js
+scripts[] = js/jquery.validate.js
+scripts[] = js/form.js
+
+;; ADD CSS FILES ;;
+stylesheets[all][] = css/styles_2.css
+stylesheets[all][] = css/normalize.css
+stylesheets[all][] = css/styles.css
+stylesheets[all][] = css/custom.css
+
+
+
+
+

@@ -1,0 +1,5 @@
+core = "7.x"
+description = "Configuración para publicaciones"
+name = "Categorias publicaciones"
+package = "CDI INTERACTIVE"
+configure = admin/config/content/categorias_publicaciones

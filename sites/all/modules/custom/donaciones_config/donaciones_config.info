@@ -1,0 +1,5 @@
+core = "7.x"
+description = "Configuraciones para el sitio de donaciones de Uniandes"
+name = "Configuración sitio de donaciones"
+package = "CDI INTERACTIVE"
+configure = admin/config/content/donaciones_config

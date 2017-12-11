@@ -1,0 +1,58 @@
+<?php 
+
+function parche_23_nov_install(){
+$field = array(
+  'field' => array(
+    'field_name'  => 'field_activar_boton_donar',
+    'label'       => 'Activar boton Donar',
+    'type'        => 'list_boolean',    
+    'settings'    => array(
+      'allowed_values' => array(
+        '',
+        '',
+      ),
+    ),
+  ),
+  'instance_causas' => array(
+    'field_name'  => 'field_activar_boton_donar',
+    'entity_type' => 'node',
+    'bundle'      => 'causas',
+    'label'       => 'Activar boton Donar',
+    'widget'      => array(
+      'type'      => 'options_onoff',
+      'settings'  => array(
+        'display_label' => TRUE,
+      ),
+    ),
+    'display'     => array(
+      'default'   => array(
+        'label'   => 'hidden',
+        'type'    => 'hidden',
+      ),
+    ),
+  ),
+  'instance_campanas' => array(
+    'field_name'  => 'field_activar_boton_donar',
+    'entity_type' => 'node',
+    'bundle'      => 'campanas_donaciones',
+    'label'       => 'Activar boton Donar',
+    'widget'      => array(
+      'type'      => 'options_onoff',
+      'settings'  => array(
+        'display_label' => TRUE,
+      ),
+    ),
+    'display'     => array(
+      'default'   => array(
+        'label'   => 'hidden',
+        'type'    => 'hidden',
+      ),
+    ),
+  ),
+);
+
+field_create_field($field['field']);
+field_create_instance($field['instance_causas']);
+field_create_instance($field['instance_campanas']);
+
+}

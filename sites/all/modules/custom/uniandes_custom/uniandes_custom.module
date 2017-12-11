@@ -1,0 +1,119 @@
+<?php 
+
+function uniandes_custom_init( ){    
+
+ ini_set('memory_limit', '-1');
+
+}
+
+function uniandes_custom_menu(){
+
+  $menus[ "admin/config/uniandes_settings" ] = array(
+
+    'title' => 'Configuracion uniandes',
+    'description' => 'Configuraciones custom del site',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('uniandes_custom_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+
+  );
+
+  $menus['configurar/bloques'] = array(
+    'title' => 'Configura los bloques del home',
+    'page callback' => 'configurar_bloques',
+    'type' => MENU_SUGGESTED_ITEM,
+    'access arguments' => array('access content'),
+    );
+
+  return $menus;
+
+}
+
+
+function submit_form_settings( $form, &$form_state ){
+
+  if( $_POST ){
+
+    
+
+   
+   
+    variable_set( "gtm-institucional", $_POST[ "gtm-institucional" ] );
+    variable_set( "gtm-donaciones", $_POST[ "gtm-donaciones" ] );
+    variable_set( "appid-fb-institucional", $_POST[ "appid-fb-institucional" ] );
+    variable_set( "appid-fb-donaciones", $_POST[ "appid-fb-donaciones" ] );
+   
+   
+   
+
+  }
+
+}
+
+function uniandes_custom_admin_settings( ){
+
+  $form = array();
+
+  $form[ "gtm-institucional" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('GTM del sitio:'),
+    '#value' => variable_get('gtm-institucional', ""),
+    '#size' => 11,
+    '#maxlength' => 100,
+    '#description' => t("Google GTM Institucional"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "gtm-donaciones" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('GTM del sitio:'),
+    '#value' => variable_get('gtm-donaciones', ""),
+    '#size' => 11,
+    '#maxlength' => 100,
+    '#description' => t("Google GTM Donaciones"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "appid-fb-institucional" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Facebook ID App'),
+    '#value' => variable_get('appid-fb-institucional', ""),
+    '#size' => 11,
+    '#maxlength' => 100,
+    '#description' => t("Facebook ID App Institucional"),
+    '#required' => TRUE,
+
+  );
+
+  $form[ "appid-fb-donaciones" ] = array(
+
+    '#type' => 'textfield',
+    '#title' => t('Facebook ID App'),
+    '#value' => variable_get('appid-fb-donaciones', ""),
+    '#size' => 11,
+    '#maxlength' => 100,
+    '#description' => t("Facebook ID App Donaciones"),
+    '#required' => TRUE,
+
+  );
+
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
+  $form[ "#submit" ][] = "submit_form_settings";
+
+  return $form;
+
+}
+
+
+

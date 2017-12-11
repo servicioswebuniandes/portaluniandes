@@ -1,0 +1,5 @@
+name = Universidad de los Andes
+description = Modulo que establece opciones default para el sitio
+core = 7.x
+package= CDI INTERACTIVE
+configure = admin/config/uniandes_settings

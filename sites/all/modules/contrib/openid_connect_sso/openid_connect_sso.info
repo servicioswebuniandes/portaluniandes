@@ -1,0 +1,12 @@
+name = OpenID Connect Single Sign-On
+description = Provides basic SSO functionality. Also contains configuration UI for creating an SSO system.
+core = 7.x
+package = "OAuth2"
+configure = admin/config/services/openid-connect-sso
+
+; Information added by Drupal.org packaging script on 2016-06-10
+version = "7.x-1.0-alpha5+6-dev"
+core = "7.x"
+project = "openid_connect_sso"
+datestamp = "1465569879"
+

@@ -1,0 +1,5 @@
+core = "7.x"
+description = "Web service para contenidos"
+name = "Web service content"
+package = "CDI INTERACTIVE"
+configure = admin/config/content/cdi_ws

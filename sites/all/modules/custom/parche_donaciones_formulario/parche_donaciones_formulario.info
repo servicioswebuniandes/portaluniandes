@@ -1,0 +1,4 @@
+core = "7.x"
+description = "Incluye la configuración para formularios embebidos en causas, donar y campaña"
+name = "Parche Donaciones Formulario"
+package = "CDI INTERACTIVE"

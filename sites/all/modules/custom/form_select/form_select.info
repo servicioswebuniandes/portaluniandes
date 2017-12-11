@@ -1,0 +1,4 @@
+core = "7.x"
+description = "Configuraciones para el Formulario de donaciones"
+name = "Configuración formulario de donaciones"
+package = "CDI INTERACTIVE"

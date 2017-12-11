@@ -1,0 +1,4 @@
+core = "7.x"
+description = "Incluye la configuración para publicaciones y eventos según la nueva estructura"
+name = "Parche Publicaciones Eventos"
+package = "CDI INTERACTIVE"

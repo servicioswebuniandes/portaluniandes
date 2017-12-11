@@ -1,0 +1,339 @@
+<?php
+define('cifrasb', 'block-cifras');
+
+
+function donaciones_config_menu() {
+  $items = array();
+
+  $items['admin/config/content/donaciones_config'] = array(
+    'title' => 'Configuración de Cifras',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('donaciones_config_admin'),
+    );
+ 
+
+
+  return $items;
+}
+
+function donaciones_config_block_info() {
+    $blocks = array();    
+    $blocks['block-cifras'] = array(
+        'info' => t('Bloque de cifras'),
+    );
+
+    return $blocks;
+}
+
+function donaciones_config_init() {
+ ini_set('memory_limit', '-1');
+}
+
+function donaciones_config_block_view($delta = '') {
+    $block = array();
+
+    switch ($delta) {
+        case 'block-cifras':
+            $block['subject'] = '';
+            $block['content'] = theme('cifras-tpl');
+            break;
+    }
+    return $block;
+}
+
+function donaciones_config_theme() {
+    return array(
+            'cifras-tpl' => array(
+            'variables' => array(
+                    'numero_donaciones' => variable_get("numero_donaciones"),
+                    'numero_beneficiados' => variable_get("numero_beneficiados"),
+                    'numero_metas' => variable_get("numero_metas"),
+                    'texto_cifras' => variable_get("texto_cifras"),
+                    'texto_interna_titulo' => variable_get("texto_interna_titulo"),
+                    'texto_interna_subtitulo' => variable_get("texto_interna_subtitulo"),
+                    'nombre_donaciones' => variable_get("nombre_donaciones"),
+                    'nombre_beneficiados' => variable_get("nombre_beneficiados"),
+                    'nombre_metas' => variable_get("nombre_metas"),  
+                    'check_donaciones' => variable_get("check_donaciones"),
+                    'check_beneficiados' => variable_get("check_beneficiados"),
+                    'check_metas' => variable_get("check_metas")
+                    ),
+            'template' => 'cifras-tpl',
+        ),
+    );
+}
+
+function donaciones_formulario_contacto() {
+  $form = array();
+
+    $form['titulo_formulario'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el titulo el formulario de contacto en el home'),
+    '#default_value' => variable_get('titulo_formulario',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t(""),
+    '#required' => FALSE,
+    );
+
+     $form['descripcion_formulario'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la descripción para el formulario de contacto en el home'),
+    '#default_value' => variable_get('descripcion_formulario',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t(""),
+    '#required' => FALSE,
+    );
+
+     
+  return system_settings_form($form);
+
+}
+
+
+
+function donaciones_config_admin() {
+
+
+  $form = array();
+
+   $form['interna_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Contenido para interna IMPACTO'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,  
+    );
+
+    $form['interna_group']['texto_interna_titulo'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el titulo para la interna de impacto'),
+    '#default_value' => variable_get('texto_interna_titulo',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el texto que se visualizará en la interna de impacto"),
+    '#required' => FALSE,
+    );
+    
+    $form['interna_group']['texto_interna_titulo_ingles'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el titulo para la interna de impacto en inglés'),
+    '#default_value' => variable_get('texto_interna_titulo_ingles',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el texto que se visualizará en la interna de impacto en inglés"),
+    '#required' => FALSE,
+    );
+
+    $form['interna_group']['texto_interna_subtitulo'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el subtitulo para la interna de impacto'),
+    '#default_value' => variable_get('texto_interna_subtitulo',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el texto que se visualizará en la interna de impacto"),
+    '#required' => FALSE,
+    );
+
+    $form['interna_group']['texto_interna_subtitulo_ingles'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el subtitulo para la interna de impacto en ingles'),
+    '#default_value' => variable_get('texto_interna_subtitulo_ingles',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el texto que se visualizará en la interna de impacto en inglés"),
+    '#required' => FALSE,
+    );
+
+    $form['general_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Configuración General de Cifras'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,  
+    );
+
+
+   $form['general_group']['numero_donaciones'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el número de donaciones'),
+    '#default_value' => variable_get('numero_donaciones',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será la cifra que se mostrará en la sección 'Número de donaciones'"),
+    '#required' => TRUE,
+    );
+
+     $form['general_group']['numero_beneficiados'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el número de beneficiados'),
+    '#default_value' => variable_get('numero_beneficiados',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será la cifra que se mostrará en la sección 'Número de beneficiados'"),
+    '#required' => TRUE,
+    );  
+
+     $form['general_group']['numero_metas'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el número de metas cumplidas'),
+    '#default_value' => variable_get('numero_metas',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será la cifra que se mostrará en la sección 'Metas cumplidas'"),
+    '#required' => TRUE,
+    );
+
+
+
+    $form['habilitar_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Activar/Desactivar Módulos'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,  
+    );
+
+
+     $form['habilitar_group']['check_donaciones'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Activar Número de Donaciones'),
+    '#default_value' => variable_get('check_donaciones',""),    
+    '#description' => t("Esto permite que en el sitio se visualice el número de donaciones"),
+    ); 
+
+     $form['habilitar_group']['check_metas'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Activar Número de Metas'),
+    '#default_value' => variable_get('check_metas',""),
+    '#description' => t("Esto permite que en el sitio se visualice el número de metas"),
+    );
+    
+    $form['habilitar_group']['check_beneficiados'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Activar Número de Beneficiados'),
+    '#default_value' => variable_get('check_beneficiados',""),
+    '#description' => t("Esto permite que en el sitio se visualice el número de beneficiados"),
+    );
+
+    $form['etiquetas_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Control de Etiquetas'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,  
+    ); 
+
+    $form['etiquetas_group']['nombre_donaciones'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el nombre de la etiqueta "Número de donaciones" '),
+    '#default_value' => variable_get('nombre_donaciones',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el nombre visible para la etiqueta 'Número de Donaciones' "),
+    '#required' => TRUE,
+    );   
+    $form['etiquetas_group']['nombre_donaciones_ingles'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el nombre de la etiqueta "Número de donaciones" en inglés '),
+    '#default_value' => variable_get('nombre_donaciones_ingles',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el nombre visible para la etiqueta 'Número de Donaciones' en inglés "),
+    '#required' => TRUE,
+    );   
+
+
+    $form['etiquetas_group']['nombre_beneficiados'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el nombre de la etiqueta "Número de beneficiados" '),
+    '#default_value' => variable_get('nombre_beneficiados',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el nombre visible para la etiqueta 'Número de beneficiados' "),
+    '#required' => TRUE,
+    );  
+
+    $form['etiquetas_group']['nombre_beneficiados_ingles'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el nombre de la etiqueta "Número de beneficiados"  en inglés'),
+    '#default_value' => variable_get('nombre_beneficiados_ingles',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el nombre visible para la etiqueta 'Número de beneficiados' en inglés "),
+    '#required' => TRUE,
+    );  
+
+    $form['etiquetas_group']['nombre_metas'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el nombre de la etiqueta "Número de Metas" '),
+    '#default_value' => variable_get('nombre_metas',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el nombre visible para la etiqueta 'Número de metas' "),
+    '#required' => TRUE,
+    );   
+
+    $form['etiquetas_group']['nombre_metas_ingles'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el nombre de la etiqueta "Número de Metas" en inglés '),
+    '#default_value' => variable_get('nombre_metas_ingles',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el nombre visible para la etiqueta 'Número de metas' en inglés "),
+    '#required' => TRUE,
+    );
+     
+
+     $form['etiquetas_group']['texto_cifras'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el texto superior para el módulo de cifras'),
+    '#default_value' => variable_get('texto_cifras',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el texto que se visualizará en la parte superior del módulo cifras"),
+    '#required' => TRUE,
+    ); 
+
+     $form['etiquetas_group']['texto_cifras_ingles'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese el texto superior para el módulo de cifras en inglés'),
+    '#default_value' => variable_get('texto_cifras_ingles',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Este será el texto que se visualizará en la parte superior del módulo cifras en inglés"),
+    '#required' => TRUE,
+    );
+
+	/*Jholguin - agrega campos de configuración adicionales - INI*/
+	$form['form_sitio'] = array(
+		'#type' => 'fieldset',
+		'#title' => t('Relación sitio web formularios'),
+		'#collapsible' => TRUE,
+		'#collapsed' => TRUE,  
+    ); 
+	$form['form_sitio']['url_pdf_download'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Url descarga PDF'),
+		'#default_value' => variable_get('url_pdf_download',""),
+		'#size' => 100,
+		'#maxlength' => 300,
+		'#description' => t("Ingrese la url de descarga de PDF (sitio de formularios)"),
+		'#required' => TRUE,
+    );
+	$form['form_sitio']['url_pse_callback'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Url callback PSE'),
+		'#default_value' => variable_get('url_pse_callback',""),
+		'#size' => 100,
+		'#maxlength' => 300,
+		'#description' => t("Ingrese la url de de respuesta de PSE (sitio de formularios)"),
+		'#required' => TRUE,
+    );
+	/*Jholguin - agrega campos de configuración adicionales - FIN*/
+
+  return system_settings_form($form);
+}
+
+
+
+

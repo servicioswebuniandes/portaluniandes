@@ -1,0 +1,19 @@
+<?php
+function taxonomy_view_page_alter(&$page)
+{
+    if (!empty($page["content"]["system_main"]["term_heading"])){
+        unset($page["content"]["system_main"]["nodes"]);
+        unset($page["content"]["system_main"]["pager"]);
+    }
+
+    /*if( strstr( $_SERVER[ "HTTP_USER_AGENT" ], "webdev" ) ){
+        unset($page["content"]["system_main"]["nodes"]);
+        unset($page["content"]["system_main"]["pager"]);
+        echo "<pre>";
+        print_r($page);
+        echo "</pre>";
+
+        exit();
+    }*/
+}
+?>

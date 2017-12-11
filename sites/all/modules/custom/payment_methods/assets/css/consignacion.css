@@ -1,0 +1,280 @@
+body {
+  margin: 0;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+body .ico_cut {
+  text-align: center;
+}
+
+body .header_consignment {
+  color: #006135;
+  margin: 10px 0;
+  padding: 5px 15px;
+  background: #e3f9ea;
+}
+
+body .header_consignment .legal_information {
+  text-align: center;
+  font-weight: bold;
+}
+
+body .header_consignment .logo_cause {
+  text-align: center;
+}
+
+body .header_consignment .logo_cause p {
+  font-weight: bold;
+  margin: 0;
+}
+
+body .donor_txt {
+  text-align: center;
+  font-weight: bold;
+}
+
+body .bar_footer {
+  margin: 5px auto;
+  width: 98%;
+  text-align: center;
+  display: block;
+  height: 16px;
+  background: #006135;
+}
+
+body .donor_receipt_block {
+  text-transform: uppercase;
+}
+
+body .donor_receipt_block .header_consignment {
+  margin-bottom: 10px;
+  margin-top: 0;
+}
+
+body .donor_receipt_block .block_data_donor {
+  padding-top: 5px;
+}
+
+body .donor_receipt_block .bar_footer {
+  width: 100%;
+  margin: 0 auto;
+}
+
+body .donor_data_block {
+  border: 1px solid;
+  border-bottom: 0;
+}
+
+body .donor_data_block tr td {
+  padding: 3px 0;
+}
+
+body .donor_data_block tr td span {
+  font-weight: normal;
+  padding-left: 10px;
+}
+
+body .payment_data_block {
+  border: 1px solid;
+  border-collapse: collapse;
+}
+
+body .payment_data_block tr td {
+  border: 1px solid;
+  padding: 3px 15px;
+}
+
+body .payment_data_block tr.page_information td p {
+  text-transform: none;
+  text-align: center;
+  margin: auto;
+}
+
+body .block_data {
+  overflow: hidden;
+  padding: 0 15px;
+}
+
+body .block_data p {
+  font-weight: bold;
+  margin: 0;
+  padding: 5px 0;
+  float: left;
+  width: 50%;
+}
+
+body .block_data p span {
+  font-weight: normal;
+  padding-left: 5px;
+}
+
+body .code_item {
+  float: left;
+  width: 55%;
+  padding-top: 7%;
+  padding-left: 5%;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+body .code_item figure {
+  margin: 0;
+}
+
+body .cashier_ring {
+  float: right;
+  width: 30%;
+}
+
+body .cashier_ring .box_cashier_ring {
+  height: 100px;
+  border: 1px solid;
+  margin-top: 15px;
+}
+
+body .bank_data_table {
+  padding-top: 40px;
+}
+
+body .bank_data_table table {
+  border-collapse: collapse;
+  text-align: center;
+}
+
+body .bank_data_table table tr.header-table td {
+  border-bottom: 0;
+}
+
+body .bank_data_table table tr td {
+  border: 1px solid;
+}
+
+body .bank_data_table table.table_pay_data tr td {
+  border-top: 0;
+}
+
+body .bank_data_code {
+  overflow: hidden;
+  padding: 40px 0 0;
+}
+
+.pdf_consignacion {
+  text-transform: uppercase;
+}
+
+.pdf_consignacion p {
+  margin: 0;
+}
+
+.pdf_consignacion .inline_label {
+  display: inline-block;
+  text-align: right;
+}
+
+.pdf_consignacion .label_item {
+  font-weight: bold;
+  display: inline-block;
+}
+
+.pdf_consignacion article.val_date_item p {
+  display: inline-block;
+}
+
+.pdf_consignacion article.val_date_item p.inline_label {
+  width: 30%;
+  text-align: center;
+}
+
+.pdf_consignacion .code-item figure {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.pdf_consignacion .header_bank_label {
+  border: 1px solid;
+  min-height: 30px;
+}
+
+.pdf_consignacion .header_bank_label div {
+  float: left;
+  width: 22.8%;
+  border-right: 1px solid;
+  text-align: center;
+  padding: 8px;
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;
+}
+
+.pdf_consignacion .header_bank_label div:last-child {
+  border-right: 0;
+}
+
+.pdf_consignacion .blank_bank_label {
+  border: 1px solid;
+  border-top: 0;
+  min-height: 30px;
+}
+
+.pdf_consignacion .blank_bank_label div {
+  width: 22.8%;
+  -webkit-box-sizing: content-box;
+  box-sizing: content-box;
+  border-right: 1px solid #000;
+  color: #fff;
+  text-align: center;
+  padding: 8px;
+}
+
+.pdf_consignacion .blank_bank_label div:last-child {
+  border-right: 0;
+}
+
+.pdf_consignacion .cash_bank {
+  border: 1px solid;
+  border-top: 0;
+  min-height: 30px;
+}
+
+.pdf_consignacion .cash_bank .label_item {
+  padding: 8px;
+  width: 45.4%;
+  border-right: 1px solid;
+  text-align: center;
+}
+
+.pdf_consignacion .cash_bank .blank_label_item {
+  display: inline-block;
+}
+
+.pdf_consignacion .footer_bank {
+  border: 1px solid;
+  border-top: 0;
+  min-height: 30px;
+}
+
+.pdf_consignacion .footer_bank .label_item {
+  padding: 8px;
+  width: 45.4%;
+  border-right: 1px solid;
+  text-align: center;
+}
+
+.pdf_consignacion .footer_bank .blank_label_item {
+  display: inline-block;
+  width: 50%;
+  text-align: center;
+  font-weight: bold;
+}
+
+.pdf_consignacion footer {
+  margin-top: 20px;
+  clear: both;
+}
+
+.pdf_consignacion footer p {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 10pt;
+}

@@ -1,0 +1,4 @@
+core = "7.x"
+description = "Parametrizacion de URL's segun categoria para noticias"
+name = "URL Alias UniAndes"
+package = "CDI"

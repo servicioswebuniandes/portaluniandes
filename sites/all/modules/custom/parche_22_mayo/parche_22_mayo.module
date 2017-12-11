@@ -1,0 +1,697 @@
+<?php
+
+function parche_22_mayo_install() {
+
+  deshabilitar_bloques();
+  crear_menus();
+  editar_view();
+  crear_field();
+
+
+}
+
+
+function crear_field(){
+   $field_name = 'field_img_noticias_mob';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'image',
+      'cardinality' => -1,
+    );
+    field_create_field($field);
+
+    // Create the instance.
+    $instance = array( 'field_name' => $field_name,
+      'entity_type' => 'node',
+      'bundle' => 'noticias',
+      'label' => 'Imagenes mobile',      
+      'weight' => -4,      
+      'settings' => array(
+          'file_directory' => 'field/image',
+          'file_extensions' => 'png gif jpg jpeg',
+          'max_filesize' => '512KB',
+          'max_resolution' => '',
+          'min_resolution' => '',
+          'alt_field' => TRUE,
+          'title_field' => TRUE,
+          'default_image' => 0,
+          'image_field_caption' => 1,
+        ),
+    );
+    field_create_instance($instance);
+}
+
+function deshabilitar_bloques(){
+
+  db_update('block')
+  ->fields(array(
+    'status' => 0,
+    'region' => 'disabled',            
+    )
+  )
+  ->condition('delta', '1')
+  ->execute();
+
+  db_update('block')
+  ->fields(array(
+    'status' => 0,
+    'region' => 'disabled',            
+    )
+  )
+  ->condition('delta', '5')
+  ->execute();
+
+  db_update('block')
+  ->fields(array(
+    'status' => 0,
+    'region' => 'disabled',            
+    )
+  )
+  ->condition('delta', '4')
+  ->execute();
+
+}
+
+
+function crear_menus(){
+ $menus = array(
+  array(
+    'menu_name' => 'menu-menu-footer-principal',
+    'title' => 'Menu Footer Principal',
+    'description' => '',
+    ),
+  array(
+    'menu_name' => 'menu-menu-footer-principal-ingle',
+    'title' => 'Menu footer principal ingles',
+    'description' => '',
+    ),
+
+  );
+
+// Save menu group into menu_custom table
+ foreach ($menus as $menu) {
+  // Look the table first if the data does exist
+  $exists = db_query("SELECT title FROM {menu_custom} WHERE menu_name=:menu_name", array(':menu_name' => $menu['menu_name']))->fetchField();
+  // Save the record if the data does not exist
+  if (!$exists) {
+    menu_save($menu);
+  }
+}
+
+
+
+
+$links = array(
+  array(
+    array(
+      'link_title' => 'Normatividad Institucional',
+      'link_path' => '<nolink>',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      ),
+    array(
+      'link_title' => ' Enlaces Rápidos ',
+      'link_path' => '<nolink>',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 1,
+      'expanded' => 0,
+      ),
+    ),
+  );
+
+
+$item = ''; 
+foreach ($links as $layer1) {
+  foreach ($layer1 as $link) {
+    // Build an array of menu link 
+    $item = array(
+      'link_path' => $link['link_path'],
+      'link_title' => $link['link_title'],
+      'menu_name' => $link['menu_name'],
+      'weight' => $link['weight'],
+      'expanded' => $link['expanded'],
+      );
+    // Look the table first if the data does exist
+    $exists = db_query("SELECT mlid from {menu_links} WHERE link_title=:link_title AND link_path=:link_path", array(':link_title' =>  $link['link_title'], ':link_path' => $link['link_path']))->fetchField();
+    // Save the record if the data does not exist
+    if (!$exists) {  
+      menu_link_save($item);
+    }
+  }
+}
+
+
+$links = array(
+  array(
+    array(
+      'link_title' => 'INSTITUTIONAL REGULATIONS',
+      'link_path' => '<nolink>',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      ),
+    array(
+      'link_title' => 'QUICK LINKS',
+      'link_path' => '<nolink>',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 1,
+      'expanded' => 0,
+      ),
+    ),
+  );
+
+
+$item = ''; 
+foreach ($links as $layer1) {
+  foreach ($layer1 as $link) {
+    // Build an array of menu link 
+    $item = array(
+      'link_path' => $link['link_path'],
+      'link_title' => $link['link_title'],
+      'menu_name' => $link['menu_name'],
+      'weight' => $link['weight'],
+      'expanded' => $link['expanded'],
+      );
+    // Look the table first if the data does exist
+    $exists = db_query("SELECT mlid from {menu_links} WHERE link_title=:link_title AND link_path=:link_path", array(':link_title' =>  $link['link_title'], ':link_path' => $link['link_path']))->fetchField();
+    // Save the record if the data does not exist
+    if (!$exists) {  
+      menu_link_save($item);
+    }
+  }
+}
+
+
+$menu = menu_tree_all_data( "menu-menu-footer-principal");
+foreach( $menu as $item ){ 
+  $mlid=$item['link']['mlid'];
+  $title=$item['link']['link_title'];    
+  $pos=strpos($title, "Normatividad");
+  if($pos!==false){
+    print "si";
+    $normatividad=$mlid;
+  }else{
+    $enlaces=$mlid;
+  }
+}      
+
+
+$normatividad;
+$enlaces;
+
+
+$links = array(
+  array(
+    array(
+      'link_title' => 'Derechos pecunarios',
+      'link_path' => 'https://uniandes.edu.co/derechos-pecuniarios/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'Actos internos e incremento',
+      'link_path' => 'https://uniandes.edu.co/sites/default/files/Acuerdo9-PresupuestodeRentasyGastos2016.pdf',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    array(
+      'link_title' => 'Porcentaje de incremento',
+      'link_path' => 'https://uniandes.edu.co/sites/default/files/Acuerdo9-PresupuestodeRentasyGastos2016.pdf',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'Estatuto general',
+      'link_path' => 'https://secretariageneral.uniandes.edu.co/index.php/en/normatividad-institucional/2-uncategorised/69-estatutos-de-la-universidad',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+
+    array(
+      'link_title' => 'Reglamentos de estudiantes',
+      'link_path' => 'https://secretariageneral.uniandes.edu.co/index.php/es/component/content/article/11-asuntos-estudiantiles/24-reglamentos-estudiantiles',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'Estatuto docente',
+      'link_path' => 'https://uniandes.edu.co/estatuto-docente/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    array(
+      'link_title' => 'Bienestar',
+      'link_path' => 'https://uniandes.edu.co/bienestar/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'Ley de transparencia',
+      'link_path' => 'https://uniandes.edu.co/ley-de-transparencia/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    array(
+      'link_title' => 'Uso de datos personales',
+      'link_path' => 'https://uniandes.edu.co/uso-de-datos-personales/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    
+    ),
+  );
+
+
+
+$item = ''; 
+foreach ($links as $layer1) {
+  foreach ($layer1 as $link) {
+    // Build an array of menu link 
+    $item = array(
+      'link_path' => $link['link_path'],
+      'link_title' => $link['link_title'],
+      'menu_name' => $link['menu_name'],
+      'weight' => $link['weight'],
+      'expanded' => $link['expanded'],
+      'plid' => $link['plid'],
+      );
+    // Look the table first if the data does exist
+    $exists = db_query("SELECT mlid from {menu_links} WHERE link_title=:link_title AND link_path=:link_path", array(':link_title' =>  $link['link_title'], ':link_path' => $link['link_path']))->fetchField();
+    // Save the record if the data does not exist
+    if (!$exists) {  
+      menu_link_save($item);
+    }
+  }
+}
+
+
+$links = array(
+  array(
+    array(
+      'link_title' => 'Preguntas frecuentes',
+      'link_path' => 'https://uniandes.edu.co/preguntas-frecuentes/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ), 
+
+    array(
+      'link_title' => 'Convivencia y transparencia',
+      'link_path' => 'https://uniandes.edu.co/es/convivencia-0/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ),
+    array(
+      'link_title' => 'Mapa del sitio',
+      'link_path' => 'https://uniandes.edu.co/sitemap/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ), 
+
+    array(
+      'link_title' => 'Emergencias: Extensión 0000',
+      'link_path' => 'https://gerenciacampus.uniandes.edu.co/Areas-funcionales/Servicios-medicos-y-seguridad-industrial/Emergencias/Sistema-de-Atencion-de-Emergencias-SAE',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+
+
+      ),
+
+    array(
+      'link_title' => 'Centro de español',
+      'link_path' => 'http://programadeescritura.uniandes.edu.co/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+
+      ), 
+
+    array(
+      'link_title' => 'Conecta-TE',
+      'link_path' => 'https://conectate.uniandes.edu.co/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      
+      ),
+    array(
+      'link_title' => 'Noticias',
+      'link_path' => 'https://uniandes.edu.co/noticias/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ), 
+
+    array(
+      'link_title' => 'Multimedia',
+      'link_path' => 'https://uniandes.edu.co/multimedia/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ),
+    array(
+      'link_title' => 'Eventos destacados',
+      'link_path' => 'https://uniandes.edu.co/eventos/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ),
+    
+    ),
+  );
+
+
+
+$item = ''; 
+foreach ($links as $layer1) {
+  foreach ($layer1 as $link) {
+    // Build an array of menu link 
+    $item = array(
+      'link_path' => $link['link_path'],
+      'link_title' => $link['link_title'],
+      'menu_name' => $link['menu_name'],
+      'weight' => $link['weight'],
+      'expanded' => $link['expanded'],
+      'plid' => $link['plid'],
+      );
+    // Look the table first if the data does exist
+    $exists = db_query("SELECT mlid from {menu_links} WHERE link_title=:link_title AND link_path=:link_path", array(':link_title' =>  $link['link_title'], ':link_path' => $link['link_path']))->fetchField();
+    // Save the record if the data does not exist
+    if (!$exists) {  
+      menu_link_save($item);
+    }
+  }
+}
+
+
+
+
+
+
+$menu = menu_tree_all_data( "menu-menu-footer-principal-ingle");
+foreach( $menu as $item ){ 
+  $mlid=$item['link']['mlid'];
+  $title=$item['link']['link_title'];    
+  $pos=strpos($title, "REGULATIONS");
+  if($pos!==false){
+    print "si";
+    $normatividad=$mlid;
+  }else{
+    $enlaces=$mlid;
+  }
+}      
+
+
+$normatividad;
+$enlaces;
+
+
+$links = array(
+  array(
+    array(
+      'link_title' => 'Pecuniary rights',
+      'link_path' => 'https://uniandes.edu.co/en/pecuniary-rights/',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'Internal acts and fee increase',
+      'link_path' => 'https://uniandes.edu.co/sites/default/files/Acuerdo9-PresupuestodeRentasyGastos2016.pdf',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    array(
+      'link_title' => 'Fees increase percentage',
+      'link_path' => 'https://uniandes.edu.co/sites/default/files/Acuerdo9-PresupuestodeRentasyGastos2016.pdf',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'General Statute',
+      'link_path' => 'https://secretariageneral.uniandes.edu.co/index.php/en/normatividad-institucional/2-uncategorised/69-estatutos-de-la-universidad',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+
+    array(
+      'link_title' => 'Student regulations',
+      'link_path' => 'https://secretariageneral.uniandes.edu.co/index.php/es/component/content/article/11-asuntos-estudiantiles/24-reglamentos-estudiantiles',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'Teacher Statute',
+      'link_path' => 'https://secretariageneral.uniandes.edu.co/index.php/es/normatividad-institucional/20-normatividad-institucional/76-estatuto-profesoral',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    array(
+      'link_title' => 'Wellness',
+      'link_path' => 'https://uniandes.edu.co/en/wellness/',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ), 
+
+    array(
+      'link_title' => 'Transparency law',
+      'link_path' => 'https://uniandes.edu.co/en/transparency-law/',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    array(
+      'link_title' => 'Use of personal data',
+      'link_path' => 'https://uniandes.edu.co/en/use-of-personal-data/',
+      'menu_name' => 'menu-menu-footer-principal-ingle',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$normatividad,
+      ),
+    
+    ),
+  );
+
+
+
+$item = ''; 
+foreach ($links as $layer1) {
+  foreach ($layer1 as $link) {
+    // Build an array of menu link 
+    $item = array(
+      'link_path' => $link['link_path'],
+      'link_title' => $link['link_title'],
+      'menu_name' => $link['menu_name'],
+      'weight' => $link['weight'],
+      'expanded' => $link['expanded'],
+      'plid' => $link['plid'],
+      );
+    // Look the table first if the data does exist
+    $exists = db_query("SELECT mlid from {menu_links} WHERE link_title=:link_title AND link_path=:link_path", array(':link_title' =>  $link['link_title'], ':link_path' => $link['link_path']))->fetchField();
+    // Save the record if the data does not exist
+    if (!$exists) {  
+      menu_link_save($item);
+    }
+  }
+}
+
+
+$links = array(
+  array(
+    array(
+      'link_title' => 'FAQ',
+      'link_path' => 'https://uniandes.edu.co/en/faq/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ), 
+
+    array(
+      'link_title' => 'Contact Us',
+      'link_path' => 'https://uniandes.edu.co/en/contact-us/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ),
+    array(
+      'link_title' => 'Site Map',
+      'link_path' => 'https://uniandes.edu.co/sitemap/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ), 
+
+    array(
+      'link_title' => 'Communications and Brand',
+      'link_path' => 'https://uniandes.edu.co/en/communicatons-and-branch/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+
+
+      ),
+
+    array(
+      'link_title' => 'Emergencies: Extension 0000',
+      'link_path' => 'https://gerenciacampus.uniandes.edu.co/Areas-funcionales/Servicios-medicos-y-seguridad-industrial/Emergencias/Sistema-de-Atencion-de-Emergencias-SAE',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+
+      ), 
+
+    array(
+      'link_title' => 'Spanish Center',
+      'link_path' => 'http://programadeescritura.uniandes.edu.co/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      
+      ),
+    array(
+      'link_title' => 'Conect-TE',
+      'link_path' => 'https://conectate.uniandes.edu.co/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ), 
+
+    array(
+      'link_title' => 'News',
+      'link_path' => 'https://uniandes.edu.co/en/news/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ),
+    array(
+      'link_title' => 'Multimedia',
+      'link_path' => 'https://uniandes.edu.co/en/multimedia/',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ),
+    array(
+      'link_title' => 'Featured Events',
+      'link_path' => 'https://uniandes.edu.co/en/events',
+      'menu_name' => 'menu-menu-footer-principal',
+      'weight' => 0,
+      'expanded' => 0,
+      'plid' =>$enlaces,
+      ),
+    
+    ),
+  );
+
+
+
+$item = ''; 
+foreach ($links as $layer1) {
+  foreach ($layer1 as $link) {
+    // Build an array of menu link 
+    $item = array(
+      'link_path' => $link['link_path'],
+      'link_title' => $link['link_title'],
+      'menu_name' => $link['menu_name'],
+      'weight' => $link['weight'],
+      'expanded' => $link['expanded'],
+      'plid' => $link['plid'],
+      );
+    // Look the table first if the data does exist
+    $exists = db_query("SELECT mlid from {menu_links} WHERE link_title=:link_title AND link_path=:link_path", array(':link_title' =>  $link['link_title'], ':link_path' => $link['link_path']))->fetchField();
+    // Save the record if the data does not exist
+    if (!$exists) {  
+      menu_link_save($item);
+    }
+  }
+}
+
+
+
+}
+
+function editar_view(){
+  $view = views_get_view('noticias_tag_especiales', TRUE);
+  $view->display['default']->display_options['fields']['nothing']['alter']['text']='
+  <div class="news_type_0  images_type_0 news_destacada_[field_es_not_des_noticias] news-highlighted-[field_es_not_des_noticias]  ">
+    <div class="imagen">[field_imagen_miniatura_noticias]
+    </div>
+    <section>
+     <p class="info-fecha">[field_fecha_creacion_noticias]</p>
+     <h2 class="info-titulo">[title]</h2>
+     <p class="info-copy">[field_descripcion_corta_noticias]</p>
+     [field_boton_noticia]
+     <section>
+     </div>';
+     views_save_view($view);
+
+ $view2 = views_get_view('vista_noticias_home', TRUE);   
+ unset($view2->display['block']->display_options['header']);
+ unset($view2->display['block']->display_options['footer']);  
+ views_save_view($view2);
+
+   }
+
+
+

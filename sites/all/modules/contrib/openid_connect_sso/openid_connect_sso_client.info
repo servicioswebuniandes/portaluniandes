@@ -1,0 +1,13 @@
+name = OpenID Connect Single Sign-On Client
+description = Overrides basic user functions to enable SSO functionality for client sites: login and logout redirects, user profile editing permissions, and SSO authorization client.
+core = 7.x
+package = "OAuth2"
+dependencies[] = openid_connect
+dependencies[] = openid_connect_sso
+
+; Information added by Drupal.org packaging script on 2016-06-10
+version = "7.x-1.0-alpha5+6-dev"
+core = "7.x"
+project = "openid_connect_sso"
+datestamp = "1465569879"
+

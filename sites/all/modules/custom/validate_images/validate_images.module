@@ -1,0 +1,49 @@
+<?php
+/**
+ * Implements hook_field_validate().
+ */
+function validate_images_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors)
+{
+    echo "<pre>";
+    print_r($entity_type);
+    echo "</pre>";
+
+    echo "<br><br><br><br>";
+
+    echo "<pre>";
+    print_r($entity);
+    echo "</pre>";
+
+    echo "<br><br><br><br>";
+
+    echo "<pre>";
+    print_r($field);
+    echo "</pre>";
+
+    echo "<br><br><br><br>";
+
+    echo "<pre>";
+    print_r($instance);
+    echo "</pre>";
+
+    echo "<br><br><br><br>";
+
+    echo "<pre>";
+    print_r($langcode);
+    echo "</pre>";
+
+    echo "<br><br><br><br>";
+
+    echo "<pre>";
+    print_r($items);
+    echo "</pre>";
+
+    echo "<br><br><br><br>";
+
+    echo "<pre>";
+    print_r($errors);
+    echo "</pre>";
+
+    echo "<br><br><br><br>";
+
+}

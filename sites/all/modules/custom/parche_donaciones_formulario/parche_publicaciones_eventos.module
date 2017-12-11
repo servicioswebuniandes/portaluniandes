@@ -1,0 +1,1005 @@
+<?php
+
+function parche_publicaciones_eventos_install() {
+  crear_categorias_publicaciones();
+  crear_fields_publicaciones();
+  crear_fields_eventos();
+}
+
+function crear_fields_publicaciones(){
+   $field_name = 'field_autor';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Autor',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $field_name = 'field_fecha_publicacion_libro';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Fecha Publicacion (Solo se visualiza)',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_edicion';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Edicion',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_editorial';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Editorial',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+
+    $field_name = 'field_tematica';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Tematica',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_cubierta';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Cubierta',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+    
+    $field_name = 'field_formato_libro';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Formato',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_disponibilidad';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Disponibilidad',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_numero_paginas';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Numero paginas',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_idioma_libro';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Idioma libro',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => 'field_boton_noticia',
+        'entity_type' => 'node',
+        'label' => 'Boton de compra',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $instance = array(
+        'field_name' => 'field_titulo_publicitario',
+        'entity_type' => 'node',
+        'label' => 'Titulo publicitario',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => 'field_descripcion_publicitario',
+        'entity_type' => 'node',
+        'label' => 'Descripcion publicitario',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_precio_libro';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Precio libro',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => 'field_boton_anuncio',
+        'entity_type' => 'node',
+        'label' => 'Boton',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $instance = array(
+        'field_name' => 'field_imagen_fondo_cifras',
+        'entity_type' => 'node',
+        'label' => 'Imagen de fondo',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => 'field_imagen_banner_mob_maestra4',
+        'entity_type' => 'node',
+        'label' => 'Imagen mobile',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_about';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'about',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_award';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'award',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $field_name = 'field_character';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'character',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_citation';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'citation',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => 'field_categoria_a_la_que_pertene',
+        'entity_type' => 'node',
+        'label' => 'citation',
+        'bundle' => 'publicaciones',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+}
+
+function crear_fields_eventos(){
+
+
+    $field_name = 'field_composer';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Composer',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_duration';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Duration',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $field_name = 'field_eventstatus';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'EventStatus',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_funder';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Funder',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_inlanguage';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'inLanguage',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_isaccesibleforfree';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'isAccesibleForFree',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_organizer';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Organizer',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $field_name = 'field_review';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Review',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_sponsor';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Sponsor',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $field_name = 'field_translator';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Translator',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_typicalagerange';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'typicalAgeRange',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_subevent_nombre';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Nombre subevento',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $field_name = 'field_subevent_descripcion';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Descripcion subevento',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $field_name = 'field_subevent';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'node',
+        'label' => 'Ubicacion subevento',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => "field_fecha_creacion_noticias" ,
+        'entity_type' => 'node',
+        'label' => 'Doortime',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+  
+   $instance = array(
+        'field_name' => "field_fecha_inicio_home" ,
+        'entity_type' => 'node',
+        'label' => 'Fecha Inicio Subevento',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => "field_fecha_fin_home" ,
+        'entity_type' => 'node',
+        'label' => 'Fecha Fin Subevento',
+        'bundle' => 'eventos',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+}
+
+function crear_categorias_publicaciones(){
+  $categoriaPublicaciones = (object) array(
+    'name' => 'Categorias publicaciones',
+    'description' => 'Taxonomia para organizar las publicaciones por categorias',
+    'machine_name' => 'categorias_publicaciones',
+    'translate' => 'Save and translate',
+    'i18n_mode' => '4',
+  );  
+  taxonomy_vocabulary_save($categoriaPublicaciones);
+
+
+
+$field = array(
+  'field_name' => 'field_categoria_a_la_que_pertene',
+  'cardinality' => -1,
+  'type' => 'taxonomy_term_reference',
+  'settings' => array(
+    'allowed_values' => array(
+      array(
+        'vocabulary' => "categorias_publicaciones",
+        'parent' => 0
+      ),
+    ),
+  ),
+);
+
+field_create_field($field);
+
+
+
+   $field_name = 'field_titulo_publicitario';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'taxonomy_term',
+        'label' => 'Publicitario',
+        'bundle' => 'categorias_publicaciones2',
+        'required' => false,    
+    ); 
+    field_create_instance($instance);
+    
+    $field_name = 'field_descripcion_publicitario';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    $instance = array(
+        'field_name' => $field_name,
+        'entity_type' => 'taxonomy_term',
+        'label' => 'Descripcion',
+        'bundle' => 'categorias_publicaciones2',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+
+    $instance = array(
+        'field_name' => "field_boton_anuncio",
+        'entity_type' => 'taxonomy_term',
+        'label' => 'Boton',
+        'bundle' => 'categorias_publicaciones2',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $instance = array(
+        'field_name' => "field_imagen_fondo_cifras",
+        'entity_type' => 'taxonomy_term',
+        'label' => 'Imagen de fondo',
+        'bundle' => 'categorias_publicaciones2',
+        'required' => false,    
+    );
+
+    field_create_instance($instance); 
+
+    $instance = array(
+        'field_name' => "field_imagen_banner_mob_maestra4",
+        'entity_type' => 'taxonomy_term',
+        'label' => 'Imagen mobile',
+        'bundle' => 'categorias_publicaciones2',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);  
+
+    $instance = array(
+        'field_name' => "field_titulo_cifras",
+        'entity_type' => 'taxonomy_term',
+        'label' => 'Imagen mobile',
+        'bundle' => 'categorias_publicaciones2',
+        'required' => false,    
+    );
+
+    field_create_instance($instance);
+}
+
+
+
+
+/**
+ * Implements hook_views_api().
+ */
+function parche_publicaciones_eventos_views_api() {
+  list($module, $api) = func_get_args();
+  if ($module == "views" && $api == "views_default") {
+    return array("version" => "3.0");
+  }
+}
+
+/** 
+ * Implementation of hook_views_default_views().
+ */
+function parche_publicaciones_eventos_views_default_views() { 
+
+  $export = array();
+
+  $view = new view();
+$view->name = 'categorias_publicaciones';
+$view->description = '';
+$view->tag = 'default';
+$view->base_table = 'node';
+$view->human_name = 'Categorias publicaciones';
+$view->core = 7;
+$view->api_version = '3.0';
+$view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
+
+/* Display: Master */
+$handler = $view->new_display('default', 'Master', 'default');
+$handler->display->display_options['use_ajax'] = TRUE;
+$handler->display->display_options['use_more_always'] = FALSE;
+$handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['cache']['type'] = 'none';
+$handler->display->display_options['query']['type'] = 'views_query';
+$handler->display->display_options['exposed_form']['type'] = 'basic';
+$handler->display->display_options['exposed_form']['options']['reset_button_label'] = 'Reiniciar';
+$handler->display->display_options['pager']['type'] = 'full';
+$handler->display->display_options['pager']['options']['items_per_page'] = '6';
+$handler->display->display_options['pager']['options']['offset'] = '0';
+$handler->display->display_options['pager']['options']['id'] = '0';
+$handler->display->display_options['pager']['options']['quantity'] = '9';
+$handler->display->display_options['pager']['options']['tags']['first'] = '<<';
+$handler->display->display_options['pager']['options']['tags']['previous'] = '<';
+$handler->display->display_options['pager']['options']['tags']['next'] = '>';
+$handler->display->display_options['pager']['options']['tags']['last'] = '>>';
+$handler->display->display_options['style_plugin'] = 'list';
+$handler->display->display_options['row_plugin'] = 'fields';
+/* Campo: Contenido: Imagen miniatura */
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['id'] = 'field_imagen_miniatura_noticias';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['table'] = 'field_data_field_imagen_miniatura_noticias';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['field'] = 'field_imagen_miniatura_noticias';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['label'] = '';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['click_sort_column'] = 'fid';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['settings'] = array(
+  'image_style' => '',
+  'image_link' => '',
+);
+/* Campo: Contenido: Post date */
+$handler->display->display_options['fields']['created']['id'] = 'created';
+$handler->display->display_options['fields']['created']['table'] = 'node';
+$handler->display->display_options['fields']['created']['field'] = 'created';
+$handler->display->display_options['fields']['created']['label'] = '';
+$handler->display->display_options['fields']['created']['exclude'] = TRUE;
+$handler->display->display_options['fields']['created']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['created']['date_format'] = 'custom';
+$handler->display->display_options['fields']['created']['custom_date_format'] = 'd/m/Y';
+$handler->display->display_options['fields']['created']['second_date_format'] = 'long';
+/* Campo: Contenido: Título */
+$handler->display->display_options['fields']['title']['id'] = 'title';
+$handler->display->display_options['fields']['title']['table'] = 'node';
+$handler->display->display_options['fields']['title']['field'] = 'title';
+$handler->display->display_options['fields']['title']['label'] = '';
+$handler->display->display_options['fields']['title']['exclude'] = TRUE;
+$handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
+$handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
+$handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
+/* Campo: Global: Custom text */
+$handler->display->display_options['fields']['nothing']['id'] = 'nothing';
+$handler->display->display_options['fields']['nothing']['table'] = 'views';
+$handler->display->display_options['fields']['nothing']['field'] = 'nothing';
+$handler->display->display_options['fields']['nothing']['label'] = '';
+$handler->display->display_options['fields']['nothing']['alter']['text'] = '<div class="row">
+      <div class="col-xs-12 col-md-4">
+       <figure>
+        [field_imagen_miniatura_noticias]
+       </figure>
+      </div>
+      <div class="col-xs-12 col-md-6">
+       <p class=\'tags-fecha\'>[created] </p>
+       <h2>[title]</h2>
+       <div class="linea-h2-tag"></div>
+       <p>[field_sub_titulo_noticias] </p>
+      </div>
+     </div>';
+$handler->display->display_options['fields']['nothing']['element_label_colon'] = FALSE;
+/* Sort criterion: Contenido: Post date */
+$handler->display->display_options['sorts']['created']['id'] = 'created';
+$handler->display->display_options['sorts']['created']['table'] = 'node';
+$handler->display->display_options['sorts']['created']['field'] = 'created';
+$handler->display->display_options['sorts']['created']['order'] = 'DESC';
+/* Contextual filter: Contenido: Has taxonomy term ID */
+$handler->display->display_options['arguments']['tid']['id'] = 'tid';
+$handler->display->display_options['arguments']['tid']['table'] = 'taxonomy_index';
+$handler->display->display_options['arguments']['tid']['field'] = 'tid';
+$handler->display->display_options['arguments']['tid']['default_action'] = 'default';
+$handler->display->display_options['arguments']['tid']['exception']['title'] = 'Todo';
+$handler->display->display_options['arguments']['tid']['default_argument_type'] = 'taxonomy_tid';
+$handler->display->display_options['arguments']['tid']['summary']['number_of_records'] = '0';
+$handler->display->display_options['arguments']['tid']['summary']['format'] = 'default_summary';
+$handler->display->display_options['arguments']['tid']['summary_options']['items_per_page'] = '25';
+/* Filter criterion: Contenido: Publicado */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = 1;
+$handler->display->display_options['filters']['status']['group'] = 1;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Contenido: Tipo */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'node';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'publicaciones' => 'publicaciones',
+);
+/* Filter criterion: Contenido: Idioma */
+$handler->display->display_options['filters']['language']['id'] = 'language';
+$handler->display->display_options['filters']['language']['table'] = 'node';
+$handler->display->display_options['filters']['language']['field'] = 'language';
+$handler->display->display_options['filters']['language']['value'] = array(
+  '***CURRENT_LANGUAGE***' => '***CURRENT_LANGUAGE***',
+);
+
+/* Display: Bloque */
+$handler = $view->new_display('block', 'Bloque', 'block_1');
+$handler->display->display_options['defaults']['fields'] = FALSE;
+/* Campo: Contenido: Imagen miniatura */
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['id'] = 'field_imagen_miniatura_noticias';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['table'] = 'field_data_field_imagen_miniatura_noticias';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['field'] = 'field_imagen_miniatura_noticias';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['label'] = '';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['click_sort_column'] = 'fid';
+$handler->display->display_options['fields']['field_imagen_miniatura_noticias']['settings'] = array(
+  'image_style' => '',
+  'image_link' => 'content',
+);
+/* Campo: Contenido: Post date */
+$handler->display->display_options['fields']['created']['id'] = 'created';
+$handler->display->display_options['fields']['created']['table'] = 'node';
+$handler->display->display_options['fields']['created']['field'] = 'created';
+$handler->display->display_options['fields']['created']['label'] = '';
+$handler->display->display_options['fields']['created']['exclude'] = TRUE;
+$handler->display->display_options['fields']['created']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['created']['date_format'] = 'custom';
+$handler->display->display_options['fields']['created']['custom_date_format'] = 'd/m/Y';
+$handler->display->display_options['fields']['created']['second_date_format'] = 'long';
+/* Campo: Contenido: Título */
+$handler->display->display_options['fields']['title']['id'] = 'title';
+$handler->display->display_options['fields']['title']['table'] = 'node';
+$handler->display->display_options['fields']['title']['field'] = 'title';
+$handler->display->display_options['fields']['title']['label'] = '';
+$handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
+$handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
+$handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
+/* Campo: Contenido: Descripción corta */
+$handler->display->display_options['fields']['field_descripcion_corta_noticias']['id'] = 'field_descripcion_corta_noticias';
+$handler->display->display_options['fields']['field_descripcion_corta_noticias']['table'] = 'field_data_field_descripcion_corta_noticias';
+$handler->display->display_options['fields']['field_descripcion_corta_noticias']['field'] = 'field_descripcion_corta_noticias';
+$handler->display->display_options['fields']['field_descripcion_corta_noticias']['label'] = '';
+$handler->display->display_options['fields']['field_descripcion_corta_noticias']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_descripcion_corta_noticias']['element_label_colon'] = FALSE;
+/* Campo: Contenido: Fecha creacion */
+$handler->display->display_options['fields']['field_fecha_creacion_noticias']['id'] = 'field_fecha_creacion_noticias';
+$handler->display->display_options['fields']['field_fecha_creacion_noticias']['table'] = 'field_data_field_fecha_creacion_noticias';
+$handler->display->display_options['fields']['field_fecha_creacion_noticias']['field'] = 'field_fecha_creacion_noticias';
+$handler->display->display_options['fields']['field_fecha_creacion_noticias']['label'] = '';
+$handler->display->display_options['fields']['field_fecha_creacion_noticias']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_fecha_creacion_noticias']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['field_fecha_creacion_noticias']['settings'] = array(
+  'format_type' => 'dia_mes_a_o',
+  'fromto' => 'both',
+  'multiple_number' => '',
+  'multiple_from' => '',
+  'multiple_to' => '',
+  'show_remaining_days' => 0,
+  'show_repeat_rule' => 'show',
+);
+$translatables['categorias_publicaciones'] = array(
+  t('Master'),
+  t('more'),
+  t('Apply'),
+  t('Reiniciar'),
+  t('Sort by'),
+  t('Asc'),
+  t('Desc'),
+  t('Items per page'),
+  t('- All -'),
+  t('Offset'),
+  t('<<'),
+  t('<'),
+  t('>'),
+  t('>>'),
+  t('<div class="row">
+      <div class="col-xs-12 col-md-4">
+       <figure>
+        [field_imagen_miniatura_noticias]
+       </figure>
+      </div>
+      <div class="col-xs-12 col-md-6">
+       <p class=\'tags-fecha\'>[created] </p>
+       <h2>[title]</h2>
+       <div class="linea-h2-tag"></div>
+       <p>[field_sub_titulo_noticias] </p>
+      </div>
+     </div>'),
+  t('Todo'),
+  t('Bloque'),
+);
+
+
+  $export['test'] = $view;
+  return $export;
+
+}
+

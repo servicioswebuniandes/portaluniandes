@@ -1,0 +1,4 @@
+core = "7.x"
+description = "Parche 22 mayo: Incluye creacion de menu footer y menu footer inglés"
+name = "Parche 22 de mayo"
+package = "CDI INTERACTIVE"

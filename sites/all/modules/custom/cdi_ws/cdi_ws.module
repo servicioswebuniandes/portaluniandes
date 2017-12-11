@@ -1,0 +1,685 @@
+<?php
+
+
+function cdi_ws_menu() {
+  $items = array();
+
+  $items['admin/config/content/cdi_ws'] = array(
+  'title' => t('Configuración del web service'),
+  'description' => t('Configura los parametros para recibir y enviar contenido'),
+  'page callback' => 'drupal_get_form',
+  'page arguments' => array('cdi_ws_admin'),
+  'access arguments' => array('administer site configuration'),
+  );
+
+  $items['admin/config/content/cdi_ws/list'] = array(
+  'title' => 'Enviar contenido',
+  'type' => MENU_DEFAULT_LOCAL_TASK,
+  'weight' => -10,
+  );
+ 
+  $items['admin/config/content/cdi_ws/receive'] = array(
+    'title' => 'Recibir Contenido',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cdi_ws_receive'),
+    'access arguments' => array('administer site configuration'),
+    );
+
+  $items['admin/config/content/cdi_ws/syncronize'] = array(
+    'title' => 'Sincronizar contenido',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cdi_ws_syncronize_form'),
+    'access arguments' => array('administer site configuration'),
+    );
+
+
+  $items['cdi_ws/send/content_type'] = array(
+    'title' => t('Configuración del web service'),
+    'description' => t('Configura los parametros para recibir y enviar contenido'),
+    'page callback' => 'cdi_ws_send_web_service_content_types',
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+    ); 
+
+  $items['cdi_ws/send/taxonomies'] = array(
+    'title' => t('Configuración del web service'),
+    'description' => t('Configura los parametros para recibir y enviar contenido'),
+    'page callback' => 'cdi_ws_send_web_service_taxonomies',
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+    );
+
+
+
+
+  return $items;
+}
+
+
+function cdi_ws_syncronize_form(){
+
+
+
+  $form = array();
+
+  $form['checkbox_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Contenido a Sincronizar'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['checkbox_group']['check_content_type'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Tipo de contenido'),
+    '#description' => t("Esto sincronizara el tipo de contenido seleccionado"),
+    );
+
+  $form['checkbox_group']['check_taxonomy'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Taxonomías'),
+    '#description' => t("Esto sincronizara la taxonomía seleccionada"),
+    );
+
+  $form['checkbox_group']['check_menu'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Menú'),
+    '#description' => t("Esto sincronizara el menú seleccionado"),
+    );
+
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Sincronizar '),
+    '#submit' => array('cdi_ws_syncronize_action')
+    );
+
+
+  return $form;
+
+}
+
+function cdi_ws_syncronize_action($form, $form_state){
+  $content_type=$form_state['values']['check_content_type'];
+  $menus=$form_state['values']['check_menu'];
+  $taxonomy=$form_state['values']['check_taxonomy'];
+
+  if(!$content_type && !$menus && !$taxonomy){
+    drupal_set_message('Por favor seleccione una opción como mínimo', 'error');
+
+  }
+
+
+
+  if($content_type){
+    cdi_ws_syncronize_content_type();
+  }
+
+
+  if($menus){
+    cdi_ws_syncronize_menu();
+  }
+
+  if($taxonomy){
+    cdi_ws_syncronize_taxonomy();
+  }
+
+
+}
+
+
+function cdi_ws_syncronize_content_type(){
+
+  $arrContextOptions=array(
+    "ssl"=>array(
+      "verify_peer"=>false,
+      "verify_peer_name"=>false,
+      ),
+    );  
+
+  $url=variable_get('url_receive_type');
+  $url.="?offset=".variable_get('offset_type');
+  $url.="&limit=".variable_get('limit_type');
+
+  $contenido=file_get_contents($url,false, stream_context_create($arrContextOptions));
+  $contenido=json_decode($contenido);
+
+
+  $tipos=array();
+  foreach ($contenido as $item) {
+    foreach ($item as $key => $value) {     
+      $tipos[]= $key;
+    }
+    break;
+  }
+
+
+  $result = db_select('node', 'n');
+  $result->fields('n');
+  $result->condition('type', '%' . db_like(variable_get('type_receive')) . '%', 'LIKE');
+  $result->range(0,1);
+  $result_query= $result->execute();
+
+  $items=array();
+
+  $nodo_original=array();
+  while($record = $result_query->fetchAssoc()) {    
+    array_push($nodo_original,node_load($record['nid']));
+  }
+
+
+  $tipos_originales=array();
+  foreach ($nodo_original as $item) {
+    foreach ($item as $key => $value) {     
+      $tipos_originales[]= $key;
+    }
+    break;
+  }
+
+
+
+  foreach ($contenido as $item) {
+    print "entro";
+
+    $result = db_select('cdi_ws_log', 'c');
+    $result->fields('c');
+    $result->condition('nid_original', $item->nid, '=');
+    $result_query= $result->execute();
+
+    $resultado_log=$result_query->fetchAssoc();
+
+    if (!$resultado_log) {
+      $update=false;
+    }else{
+      $update=true;
+      $nodo_update=$resultado_log['nid_creado'];
+      $id_log=$resultado_log['id'];
+    }
+
+    $item = objectToArray($item);
+    $item=(object)$item;
+    unset($item->vid); 
+
+    if(!$update){
+      $nodo_existente=node_load($item->nid);
+      $nid_original=$item->nid;
+
+      if(!$nodo_existente){
+        $item->nid=$nid_original;
+        $item->is_new=true;
+      }else{
+        unset($item->nid);
+      }
+      $item=node_submit($item);  
+      $created_time = date('Y-m-d H:i:s');
+
+    }else{
+      $nodo_update=node_load($nodo_update);
+      $nid=$nodo_update->nid;
+      $vid=$nodo_update->vid;
+      $nodo_update=$item;
+      $item=$item;
+      $item->nid=$nid;
+      $item->vid=$vid;
+      $item=node_submit($item);  
+      $updated_time = date('Y-m-d H:i:s');
+    }
+
+    node_save($item);
+
+    if (!$update) {
+
+          db_insert('cdi_ws_log')
+    ->fields(array(
+      'nid_original' => $nid_original,
+      'nid_creado' => $item->nid,
+      'titulo' => $item->title,
+      'tipo' => $item->type,
+      'fecha_creacion' => $created_time,
+      'fecha_modificacion' => "",
+      ))
+    ->execute();
+      
+    }else{
+
+$num_updated = db_update('cdi_ws_log') // Table name no longer needs {}
+  ->fields(array(
+    'fecha_modificacion' => $updated_time,
+  ))
+  ->condition('id', $id_log, '=')
+  ->execute();
+
+
+    }
+
+  }
+
+  drupal_set_message("Contenido actualizado con éxito","status");
+
+}
+
+
+function cdi_ws_syncronize_taxonomy(){
+
+  $arrContextOptions=array(
+    "ssl"=>array(
+      "verify_peer"=>false,
+      "verify_peer_name"=>false,
+      ),
+    );  
+
+  $url=variable_get('url_receive_taxonomy');
+  $url.="?offset=".variable_get('offset_taxonomy');
+  $url.="&limit=".variable_get('limit_taxonomy');
+
+  $contenido=file_get_contents($url,false, stream_context_create($arrContextOptions));
+  $contenido=json_decode($contenido);
+
+  print_r($contenido);
+  die();
+
+  drupal_set_message('taxonomia', 'status');
+
+  
+}
+
+function cdi_ws_syncronize_menu(){
+  drupal_set_message('menu', 'status');
+
+
+  
+}
+
+
+
+function cdi_ws_send_web_service_content_types(){
+  $tipo=variable_get('type');
+  $offset=isset($_GET['offset'])  ? $_GET['offset'] : 0;
+  $limit=isset($_GET['offset'])  ? $_GET['limit'] : 10;
+
+  $result = db_select('node', 'n');
+  $result->fields('n');
+  $result->condition('type', '%' . db_like($tipo) . '%', 'LIKE');
+  $result->range($offset,$limit );
+  $result_query= $result->execute();
+
+
+  $items=array();
+
+  while($record = $result_query->fetchAssoc()) {
+    $nodo=node_load($record['nid']);
+    array_push($items, $nodo);
+  }
+
+  print json_encode($items);
+
+}
+
+
+function cdi_ws_send_web_service_taxonomies(){
+
+  $tipo=variable_get('taxonomy');
+  $offset=isset($_GET['offset']) ? $_GET['offset'] : 0;
+  $limit=isset($_GET['limit']) ? $_GET['limit'] : 10;
+  $result = db_select('taxonomy_vocabulary', 't');
+  $result->fields('t');
+  $result->condition('name', '%' . db_like($tipo) . '%', 'like');
+  $result->range($offset,$limit );
+  $result_query= $result->execute();
+
+
+  $items=array();
+
+  while($record = $result_query->fetchAssoc()) {    
+    $taxonomy_tree=taxonomy_get_tree($record['vid']);
+  }
+
+  foreach ($taxonomy_tree as $hijos) {
+    $tax=taxonomy_term_load($hijos->tid);
+    array_push($items, $tax);
+  }
+
+  print json_encode($items);
+
+}
+
+
+
+
+
+function cdi_ws_obtener_tipos(){
+  $result = db_select('node_type', 'n');
+  $result->distinct('n.type');
+  $result->fields('n');
+  $result_query = $result->execute();
+
+  $tipos=array();
+
+  while ($item=$result_query->fetchAssoc()) {
+    $key=$item['type'];
+    $value=$item['type'];
+    $tipos[$key]=$value;
+  }
+
+
+  return $tipos;
+
+
+}
+
+
+function cdi_ws_obtener_taxonomias(){
+  $result = db_select('taxonomy_vocabulary', 't');
+  $result->distinct('t.name');
+  $result->fields('t');
+  $result_query = $result->execute();
+
+  $taxonomy=array();
+
+  while ($item=$result_query->fetchAssoc()) {
+    $key=$item['name'];
+    $value=$item['name'];
+    $taxonomy[$key]=$value;
+  }
+  return $taxonomy;
+}
+
+
+function cdi_ws_obtener_menus(){
+  $result = db_select('menu_custom', 'm');
+  $result->distinct('m.menu_name');
+  $result->fields('m');
+  $result_query = $result->execute();
+
+  $menus=array();
+
+  while ($item=$result_query->fetchAssoc()) {
+    $key=$item['menu_name'];
+    $value=$item['menu_name'];
+    $menus[$key]=$value;
+  }
+  return $menus;
+}
+
+
+function cdi_ws_admin() {
+
+
+  $form = array();
+
+  $form['type_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Tipo de contenido'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['type_group']['url_send_type'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL'),
+    '#default_value' => "admin/config/content/cdi_ws",
+    '#attributes' => array('readonly' => 'readonly'),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL será la que se utilice para consumir el WS"),
+    '#required' => TRUE,
+    );
+
+  $tipos_contenido=cdi_ws_obtener_tipos();
+
+  $form['type_group']['type'] = array(
+    '#title' => t('Tipo de contenido'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('type', "Seleccione tipo de contenido"),
+    '#options' => $tipos_contenido,
+    '#required' => TRUE
+    );
+
+  $form['taxonomy_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Taxonomias'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['taxonomy_group']['url_send_taxonomy'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL'),
+    '#default_value' => "admin/config/content/cdi_ws",
+    '#attributes' => array('readonly' => 'readonly'),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL será la que se utilice para consumir el WS"),
+    '#required' => TRUE,
+    );
+
+  $taxonomias=cdi_ws_obtener_taxonomias();
+
+  $form['taxonomy_group']['taxonomy'] = array(
+    '#title' => t('Taxonomia'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('taxonomy', "Seleccione tipo de contenido"),
+    '#options' => $taxonomias,
+    '#required' => TRUE
+    );
+
+  $form['menu_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Menús'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['menu_group']['url_send_menus'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL'),
+    '#default_value' => "admin/config/content/cdi_ws",
+    '#attributes' => array('readonly' => 'readonly'),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL será la que se utilice para consumir el WS"),
+    '#required' => TRUE,
+    );
+
+  $menus=cdi_ws_obtener_menus();
+
+  $form['menu_group']['menus'] = array(
+    '#title' => t('Menús'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('menus', "Seleccione tipo de contenido"),
+    '#options' => $menus,
+    '#required' => TRUE
+    );
+
+
+
+
+
+
+  return system_settings_form($form);
+}
+
+
+function cdi_ws_receive() {
+
+
+  $form = array();
+
+  $form['type_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Tipo de contenido'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['type_group']['url_receive_type'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL'),
+    '#default_value' => variable_get('url_receive_type',""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL será la que se utilice para recibir el WS"),
+    '#required' => TRUE,
+    );
+
+  $form['type_group']['offset_type'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Offset'),
+    '#default_value' => variable_get('offset_type',"0"),
+    '#size' => 20,
+    '#maxlength' => 5,
+    '#description' => t("Este será el offset para el WS"),
+    '#required' => TRUE,
+    );
+
+  $form['type_group']['limit_type'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Limit'),
+    '#default_value' => variable_get('limit_type',"200"),
+    '#size' => 20,
+    '#maxlength' => 5,
+    '#description' => t("Este será el limit para el WS"),
+    '#required' => TRUE,
+    );
+
+
+
+  $tipos_contenido=cdi_ws_obtener_tipos();
+
+  $form['type_group']['type_receive'] = array(
+    '#title' => t('Tipo de contenido'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('type_receive', "Seleccione tipo de contenido"),
+    '#options' => $tipos_contenido,
+    '#required' => TRUE
+    );
+
+  $form['taxonomy_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Taxonomias'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['taxonomy_group']['url_receive_taxonomy'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL'),
+    '#default_value' => variable_get('url_receive_taxonomy', ""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL será la que se utilice para recibir el WS"),
+    '#required' => TRUE,
+    );
+
+  $taxonomias=cdi_ws_obtener_taxonomias();
+
+  $form['taxonomy_group']['taxonomy_receive'] = array(
+    '#title' => t('Taxonomia'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('taxonomy_receive', "Seleccione taxonomía"),
+    '#options' => $taxonomias,
+    '#required' => TRUE
+    );
+
+  $form['taxonomy_group']['offset_taxonomy'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Offset'),
+    '#default_value' => variable_get('offset_taxonomy',"0"),
+    '#size' => 20,
+    '#maxlength' => 5,
+    '#description' => t("Este será el offset para el WS"),
+    '#required' => TRUE,
+    );
+
+  $form['taxonomy_group']['limit_taxonomy'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Limit'),
+    '#default_value' => variable_get('limit_taxonomy',"200"),
+    '#size' => 20,
+    '#maxlength' => 5,
+    '#description' => t("Este será el limit para el WS"),
+    '#required' => TRUE,
+    );
+
+
+
+  $form['menu_group'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Menús'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,  
+    );
+
+  $form['menu_group']['url_receive_menus'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Ingrese la URL'),
+    '#default_value' => variable_get('url_receive_menus', ""),
+    '#size' => 100,
+    '#maxlength' => 300,
+    '#description' => t("Esta URL será la que se utilice para consumir el WS"),
+    '#required' => TRUE,
+    );
+
+  $form['menu_group']['offset_menus'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Offset'),
+    '#default_value' => variable_get('offset_menus',"0"),
+    '#size' => 20,
+    '#maxlength' => 5,
+    '#description' => t("Este será el offset para el WS"),
+    '#required' => TRUE,
+    );
+
+  $form['menu_group']['limit_menus'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Limit'),
+    '#default_value' => variable_get('limit_menus',"200"),
+    '#size' => 20,
+    '#maxlength' => 5,
+    '#description' => t("Este será el limit para el WS"),
+    '#required' => TRUE,
+    );
+
+
+
+
+
+  $menus=cdi_ws_obtener_menus();
+
+  $form['menu_group']['menus_receive'] = array(
+    '#title' => t('Menús'),
+    '#type' => 'select', 
+    '#default_value' => variable_get('menus_receive', "Seleccione el menú a recibir"),
+    '#options' => $menus,
+    '#required' => TRUE
+    );
+
+
+  return system_settings_form($form);
+}
+
+
+function objectToArray($d) {
+  if (is_object($d)) {
+            // Gets the properties of the given object
+            // with get_object_vars function
+    $d = get_object_vars($d);
+  }
+
+  if (is_array($d)) {
+            /*
+            * Return array converted to object
+            * Using __FUNCTION__ (Magic constant)
+            * for recursive call
+            */
+            return array_map(__FUNCTION__, $d);
+          }
+          else {
+            // Return array
+            return $d;
+          }
+        }
+
+

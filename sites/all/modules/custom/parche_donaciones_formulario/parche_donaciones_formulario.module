@@ -1,0 +1,48 @@
+<?php
+
+function parche_donaciones_formulario_install() {
+  eliminar_fields();
+  configurar_fields();
+}
+
+function eliminar_fields(){
+  field_delete_field('field_subtitulo_formulario');
+  field_delete_field('field__aplica_recurrencia_');
+  field_delete_field('field_codigo_causa');
+  field_purge_batch(1);
+}
+
+function configurar_fields(){
+
+   $field_name = 'field_url_formulario';
+
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'text',
+      'cardinality' => 1,
+    );
+    field_create_field($field);
+
+    // Create the instance.
+    $instance = array( 'field_name' => $field_name,
+      'entity_type' => 'node',
+      'bundle' => 'causas',
+      'label' => 'URL Formulario',            
+    );
+    field_create_instance($instance);
+
+    $instance = array( 'field_name' => $field_name,
+      'entity_type' => 'node',
+      'bundle' => 'donar',
+      'label' => 'URL Formulario',            
+    );
+    field_create_instance($instance); 
+
+    $instance = array( 'field_name' => $field_name,
+      'entity_type' => 'node',
+      'bundle' => 'campanas_donaciones',
+      'label' => 'URL Formulario',            
+    );
+    field_create_instance($instance);
+}
+

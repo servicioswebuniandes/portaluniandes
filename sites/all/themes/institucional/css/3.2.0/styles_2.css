@@ -1,0 +1,144 @@
+.node-type-maestra-4 .views-fixeld-field-url-caja-list1 span {
+  display: none; }
+
+.node-type-maestra-4 .views-fixeld-field-url-caja-list1 .field-content {
+  border: 1px solid #000;
+  padding: 12px 15px; }
+
+.node-type-maestra-4 .container-lista #quicktabs-tab_de_tipos_programas .quicktabs-tabs {
+  position: initial;
+  padding: 20px 0 40px; }
+  .node-type-maestra-4 .container-lista #quicktabs-tab_de_tipos_programas .quicktabs-tabs li {
+    background: #f4f1f1;
+    padding: 10px 50px;
+    border-bottom: 0;
+    margin: 0;
+    position: initial; }
+    .node-type-maestra-4 .container-lista #quicktabs-tab_de_tipos_programas .quicktabs-tabs li.active {
+      background: #ebba00;
+      border-color: #ebba00; }
+    .node-type-maestra-4 .container-lista #quicktabs-tab_de_tipos_programas .quicktabs-tabs li:last-child {
+      border-bottom: 1px solid #838383; }
+    .node-type-maestra-4 .container-lista #quicktabs-tab_de_tipos_programas .quicktabs-tabs li a {
+      position: initial;
+      padding: 0; }
+
+.node-type-maestra-4 .container-lista .view {
+  text-align: center; }
+  .node-type-maestra-4 .container-lista .view .view-content .views-row {
+    position: relative;
+    background-repeat: no-repeat;
+    background-size: cover;
+    width: 100%;
+    float: left;
+    margin: 0 2% 10px 0;
+    padding: 20px;
+    height: 283px; }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row:hover .views-field-field-url-caja-list1 .field-content {
+      display: block; }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row:hover .views-field-nothing:before {
+      content: '';
+      display: block;
+      border: 1px solid #fff;
+      position: relative;
+      height: 80%;
+      width: 90%;
+      margin: 0 auto;
+      bottom: -20px; }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row:hover .views-field-nothing {
+      background: rgba(0, 0, 0, 0.8); }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row:hover .views-field-field-facultadad-caja-list1 {
+      display: none; }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row:hover .views-field.views-field-title-1 {
+      padding: 20px 0 0 0; }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row:hover .views-field-field-descrip-larga-caja-list1 {
+      display: none; }
+  .node-type-maestra-4 .container-lista .view .views-field.views-field-title-1 {
+    position: relative;
+    z-index: 1;
+    padding: 60px 0 0; }
+  .node-type-maestra-4 .container-lista .view .views-field-nothing {
+    background: rgba(0, 0, 0, 0.5);
+    position: absolute;
+    width: 100%;
+    left: 0;
+    right: 0;
+    height: 100%;
+    top: 0; }
+  .node-type-maestra-4 .container-lista .view .views-label-title-1 {
+    display: none; }
+  .node-type-maestra-4 .container-lista .view .background-images-box {
+    display: none; }
+    .node-type-maestra-4 .container-lista .view .background-images-box span {
+      display: none; }
+  .node-type-maestra-4 .container-lista .view .views-field.views-field-title-1 .field-content a {
+    color: #fff;
+    margin: 10px 0 8px;
+    display: block;
+    font-size: 1.75rem;
+    text-decoration: none;
+    line-height: 1; }
+  .node-type-maestra-4 .container-lista .view .views-field-field-url-caja-list1 .views-label-field-url-caja-list1 {
+    display: none; }
+  .node-type-maestra-4 .container-lista .view .views-field-field-url-caja-list1 .views-field-field-url-caja-list1 {
+    display: none;
+    position: absolute;
+    bottom: -10px;
+    right: 0;
+    left: 0; }
+  .node-type-maestra-4 .container-lista .view .views-field-field-url-caja-list1 .field-content {
+    background: #000;
+    border: 1px solid #fff;
+    padding: 8px 50px;
+    width: 210px;
+    z-index: 10;
+    margin: 0 auto;
+    position: absolute;
+    right: 0;
+    left: 0;
+    bottom: 20px;
+    display: none;
+    text-decoration: none; }
+    .node-type-maestra-4 .container-lista .view .views-field-field-url-caja-list1 .field-content a {
+      color: #fff;
+      font-size: 0.8125rem;
+      font-family: 'Lato', sans-ser; }
+  .node-type-maestra-4 .container-lista .view .views-field-field-descrip-corta-caja-list1 {
+    text-align: center;
+    position: relative;
+    z-index: 1; }
+    .node-type-maestra-4 .container-lista .view .views-field-field-descrip-corta-caja-list1 .views-label-field-descrip-corta-caja-list1 {
+      display: none; }
+    .node-type-maestra-4 .container-lista .view .views-field-field-descrip-corta-caja-list1 .field-content {
+      color: #ebba00;
+      text-transform: uppercase;
+      margin-bottom: 25px;
+      font-family: 'Lato', sans-ser;
+      font-size: 0.8125rem; }
+  .node-type-maestra-4 .container-lista .view .views-field.views-field-field-facultadad-caja-list1 {
+    display: none; }
+  .node-type-maestra-4 .container-lista .view .views-field-field-descrip-larga-caja-list1 {
+    text-align: center;
+    position: relative;
+    z-index: 1; }
+    .node-type-maestra-4 .container-lista .view .views-field-field-descrip-larga-caja-list1 .views-label-field-descrip-larga-caja-list1 {
+      display: none; }
+    .node-type-maestra-4 .container-lista .view .views-field-field-descrip-larga-caja-list1 .field-content {
+      color: #fff; }
+
+@media only screen and (min-width: 767px) {
+  .node-type-maestra-4 .container-lista .view {
+    text-align: center; }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row {
+      width: 48%; } }
+
+@media only screen and (min-width: 991px) {
+  .node-type-maestra-4 .container-lista #quicktabs-tab_de_tipos_programas .quicktabs-tabs li {
+    border-right: 0;
+    border-bottom: 1px solid #838383; }
+    .node-type-maestra-4 .container-lista #quicktabs-tab_de_tipos_programas .quicktabs-tabs li:last-child {
+      border-right: 1px solid #838383; }
+  .node-type-maestra-4 .container-lista .view {
+    text-align: center; }
+    .node-type-maestra-4 .container-lista .view .view-content .views-row {
+      width: 31.33%; } }

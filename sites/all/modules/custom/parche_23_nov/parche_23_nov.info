@@ -1,0 +1,4 @@
+name = Parche 23 de noviembre
+description = Configuración del sitio para desarrollo de donaciones (mostrar/ocultar boton donar en causas y campañas)
+core = 7.x
+package= CDI INTERACTIVE

@@ -1,0 +1,444 @@
+<?php
+
+ini_set('max_execution_time',  99999);
+set_time_limit(99999);
+/**
+ * Reemplaza todos los acentos por sus equivalentes sin ellos
+ *
+ * @param $string
+ *  string la cadena a sanear
+ *
+ * @return $string
+ *  string saneada
+ */
+
+
+
+
+function sanear_string_alias_manual($string)
+{
+    $string = trim($string);
+
+
+    $string = str_replace(
+        array('á', 'à', 'ä', 'â', 'ª', 'Á', 'À', 'Â', 'Ä'),
+        array('a', 'a', 'a', 'a', 'a', 'A', 'A', 'A', 'A'),
+        $string
+    );
+
+    $string = str_replace(
+        array('é', 'è', 'ë', 'ê', 'É', 'È', 'Ê', 'Ë'),
+        array('e', 'e', 'e', 'e', 'E', 'E', 'E', 'E'),
+        $string
+    );
+
+    $string = str_replace(
+        array('í', 'ì', 'ï', 'î', 'Í', 'Ì', 'Ï', 'Î'),
+        array('i', 'i', 'i', 'i', 'I', 'I', 'I', 'I'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ó', 'ò', 'ö', 'ô', 'Ó', 'Ò', 'Ö', 'Ô'),
+        array('o', 'o', 'o', 'o', 'O', 'O', 'O', 'O'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ú', 'ù', 'ü', 'û', 'Ú', 'Ù', 'Û', 'Ü'),
+        array('u', 'u', 'u', 'u', 'U', 'U', 'U', 'U'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ñ', 'Ñ', 'ç', 'Ç'),
+        array('n', 'N', 'c', 'C',),
+        $string
+    );
+
+    //Esta parte se encarga de eliminar cualquier caracter extraño
+    $string = str_replace(
+        array("\\", "¨", "º", "~",
+            "#", "@", "|", "!", "\"",
+            "·", "$", "%", "&",
+            "(", ")", "?", "'", "¡",
+            "¿", "[", "^", "<code>", "]",
+            "+", "}", "{", "¨","‘","’", "´",
+            ">", "< ", ";", ",", ":",
+            ".", "…"),
+        '',
+        $string
+    );
+
+    $string = str_replace(" ", "-", $string);
+    $string = str_replace("---","-", $string);
+    $string = str_replace("--","-", $string);
+
+    
+
+    return $string;
+}
+
+function sanear_string($string)
+{
+    $string = trim($string);
+
+
+    $string = str_replace(
+        array('á', 'à', 'ä', 'â', 'ª', 'Á', 'À', 'Â', 'Ä'),
+        array('a', 'a', 'a', 'a', 'a', 'A', 'A', 'A', 'A'),
+        $string
+    );
+
+    $string = str_replace(
+        array('é', 'è', 'ë', 'ê', 'É', 'È', 'Ê', 'Ë'),
+        array('e', 'e', 'e', 'e', 'E', 'E', 'E', 'E'),
+        $string
+    );
+
+    $string = str_replace(
+        array('í', 'ì', 'ï', 'î', 'Í', 'Ì', 'Ï', 'Î'),
+        array('i', 'i', 'i', 'i', 'I', 'I', 'I', 'I'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ó', 'ò', 'ö', 'ô', 'Ó', 'Ò', 'Ö', 'Ô'),
+        array('o', 'o', 'o', 'o', 'O', 'O', 'O', 'O'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ú', 'ù', 'ü', 'û', 'Ú', 'Ù', 'Û', 'Ü'),
+        array('u', 'u', 'u', 'u', 'U', 'U', 'U', 'U'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ñ', 'Ñ', 'ç', 'Ç'),
+        array('n', 'N', 'c', 'C',),
+        $string
+    );
+
+    //Esta parte se encarga de eliminar cualquier caracter extraño
+    $string = str_replace(
+        array("\\", "¨", "º", "-", "~",
+            "#", "@", "|", "!", "\"",
+            "·", "$", "%", "&", "/",
+            "(", ")", "?", "'", "¡",
+            "¿", "[", "^", "<code>", "]",
+            "+", "}", "{", "¨","‘","’", "´",
+            ">", "< ","-", ";", ",", ":",
+            ".", "…"),
+        '',
+        $string
+    );
+
+    $string = str_replace(" ", "-", $string);
+    $string = str_replace("---","-", $string);
+    $string = str_replace("--","-", $string);
+
+    
+
+    return $string;
+}
+
+function sanear_string_solo_texto($string)
+{
+    $string = trim($string);
+
+    $string = str_replace(
+        array('á', 'à', 'ä', 'â', 'ª', 'Á', 'À', 'Â', 'Ä'),
+        array('a', 'a', 'a', 'a', 'a', 'A', 'A', 'A', 'A'),
+        $string
+    );
+
+    $string = str_replace(
+        array('é', 'è', 'ë', 'ê', 'É', 'È', 'Ê', 'Ë'),
+        array('e', 'e', 'e', 'e', 'E', 'E', 'E', 'E'),
+        $string
+    );
+
+    $string = str_replace(
+        array('í', 'ì', 'ï', 'î', 'Í', 'Ì', 'Ï', 'Î'),
+        array('i', 'i', 'i', 'i', 'I', 'I', 'I', 'I'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ó', 'ò', 'ö', 'ô', 'Ó', 'Ò', 'Ö', 'Ô'),
+        array('o', 'o', 'o', 'o', 'O', 'O', 'O', 'O'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ú', 'ù', 'ü', 'û', 'Ú', 'Ù', 'Û', 'Ü'),
+        array('u', 'u', 'u', 'u', 'U', 'U', 'U', 'U'),
+        $string
+    );
+
+    $string = str_replace(
+        array('ñ', 'Ñ', 'ç', 'Ç'),
+        array('n', 'N', 'c', 'C',),
+        $string
+    );
+
+
+    return $string;
+}
+
+function url_alias_cdi_file_presave( $file_name ){
+
+    if( strstr( $_SERVER[ "HTTP_USER_AGENT" ], "webdev" ) ){
+        
+        $drupalFile = image_get_info( $file_name->uri );
+        if( $_FILES[ "files" ][ "size" ][ $file_name->source ] != $drupalFile[ "file_size" ] ){
+            
+            file_delete( $file_name );
+            drupal_get_messages( '', 'clear_queue ' );
+            drupal_set_message( t('Incorrect resolution to image'), 'error' );
+            
+        }
+        
+    }
+}
+
+function url_alias_cdi_taxonomy_term_presave($term) {
+
+if($term->vocabulary_machine_name=="tags"){
+    $term->path['alias']="tags/".sanear_string($term->name);
+    $term->path['pathauto']=0;
+}else{
+  $term->path['alias']=sanear_string($term->name); 
+  $term->path['pathauto']=0; 
+}
+
+
+if($term->vocabulary_machine_name=="tags_donaciones"){
+    $term->path['alias']="donaciones/tags/".sanear_string($term->name);
+    $term->path['pathauto']=0;
+}
+
+
+
+
+}
+
+
+
+function url_alias_cdi_node_presave( $node ){
+    
+    /*
+     * AL INGRESAR UNA NOTICIA SE GENERA AUTOMATICAMENTE EL ALIAS CON LA URL DE LA CATEGORIA 
+     */
+
+    if(!empty($node->language)){
+        if ($node->language=="en") {
+            $donaciones="donations";
+            $donantes="/donors/";
+            $causas="/causes/";
+            $beneficiados="/beneficiaries/";
+            $historias="/story-telling/";                        
+            $campañas="/campanas/";            
+        }else{
+            $donaciones="donaciones";
+            $donantes="/donantes/";
+            $causas="/causas/";
+            $beneficiados="/beneficiarios/";
+            $historias="/historias-increibles/";
+            $campañas="/campaigns/";
+        }
+
+    }
+
+    if (!empty($node->path["alias"])) {
+        $node->path["alias"]=sanear_string_alias_manual( strtolower($node->path[ "alias" ]));
+    }else{
+
+
+
+    if(!is_null($node->path['pathauto']) && $node->path['pathauto']==0){
+        $node->path["alias"]=sanear_string_alias_manual( strtolower($node->path[ "alias" ]));
+    }else{
+
+
+    $node->path['pathauto']=0;
+    $node->path[ "alias" ]=sanear_string_solo_texto($node->path[ "alias" ]);
+
+    if( $node->type == "causas" ){
+
+        
+        if ($node->field_multimedia_noticias['und'][0]['value']==1){
+            $node->path['pathauto']=0;
+             $node->path[ "alias" ] = $donaciones.$donantes.sanear_string( strtolower(  $node->title ) );          
+        }else{
+             $node->path['pathauto']=0;
+             $node->path[ "alias" ] = $donaciones.$causas.sanear_string( strtolower(  $node->title ) );        
+        }
+
+    }
+
+    if( $node->type == "beneficiados" ){
+      
+            $node->path['pathauto']=0;
+             $node->path[ "alias" ] = $donaciones.$beneficiados.sanear_string( strtolower(  $node->title ) );          
+        
+
+    }  
+
+    if( $node->type == "story_telling" ){
+      
+            $node->path['pathauto']=0;
+             $node->path[ "alias" ] = $donaciones.$historias.sanear_string( strtolower(  $node->title ) );          
+        
+
+    }
+    
+
+
+
+    if( $node->type == "noticias" ){
+
+        $subcategoria_tid = $node->field_subcategoria_noticias[ "und" ][ 0 ][ "tid" ];
+        $subcategoria = taxonomy_term_load( $subcategoria_tid );
+        $alias1 = drupal_get_path_alias( "taxonomy/term/" . $subcategoria->tid );
+
+        $texto_noticia = sanear_string( strtolower(  $node->title ) );
+
+
+
+        if( !strstr( $alias1, "term" ) ){
+            if( $node->language == "es" ){
+                $node->path[ "alias" ] = "noticias/" . $alias1 . "/" . $texto_noticia;
+            }else{
+                $node->path[ "alias" ] = "news/" . $alias1 . "/" .$texto_noticia;
+            }
+        }else{
+            if( $node->language == "es" ){
+                $node->path[ "alias" ] = "noticias/" . $texto_noticia;
+            }else{
+                $node->path[ "alias" ] = "news/" . $texto_noticia;
+            }
+        }
+
+        if($node->field_es_mult_des_noticias['und'][0]['value']==1){
+            $node->field_multimedia_noticias['und'][0]['value']=1;
+        }
+
+    }
+
+
+    if ($node->type =="campanas_donaciones"){
+    $node->path['pathauto']=0;
+    $node->path[ "alias" ] = $donaciones.$campañas.sanear_string( strtolower(  $node->title ) );
+    }
+    
+   
+   }
+
+}
+   
+
+    $node->path[ "alias" ]=strtolower($node->path[ "alias" ]);
+   
+}
+
+function cleanArr( $arr ){
+    foreach( $arr as $key => $item ){
+        $arr[$key] = strip_tags( $item );
+    }
+    return $arr;
+}
+
+function url_alias_cdi_init(){
+
+    $_GET = cleanArr( $_GET );
+
+    /*
+     * SCRIPT PARA OPTIMIZAR LAS URL'S DE LAS NOTICIAS - AL RECIBIR AL FINAL DE LA URL ?test=test Se activa - quitar && false,  de la siguiente linea
+     */
+    if( isset( $_GET[ "test" ] ) && $_GET[ "test" ] == "test" ){
+    
+        $offset = $_GET[ "offset" ];
+    
+        $types = "noticias";
+        $result = db_query( "SELECT nid FROM dev_node WHERE type = :nodeType LIMIT 100 OFFSET " . $offset,  array(':nodeType' => $types)); //<-- change 1
+        
+        $i=0;
+        foreach ( $result as $obj ) {  //<-- change 2
+        
+            $i++;
+        
+            $node = node_load( $obj->nid );
+
+            $subcategoria_tid = $node->field_subcategoria_noticias[ "und" ][ 0 ][ "tid" ];
+            $subcategoria = taxonomy_term_load( $subcategoria_tid );
+            $alias1 = drupal_get_path_alias( "taxonomy/term/" . $subcategoria->tid );
+
+            $texto_noticia = sanear_string( strtolower(  $node->title ) );
+
+
+
+            if( !strstr( $alias1, "term" ) ){
+                if( $node->language == "es" ){
+                    $node->path[ "alias" ] = "noticias/" . $alias1 . "/" . $texto_noticia;
+                }else{
+                    $node->path[ "alias" ] = "news/" . $alias1 . "/" .$texto_noticia;
+                }
+            }else{
+                if( $node->language == "es" ){
+                    $node->path[ "alias" ] = "noticias/" . $texto_noticia;
+                }else{
+                    $node->path[ "alias" ] = "news/" . $texto_noticia;
+                }
+            }
+            
+            try{
+                node_save( $node );
+            }catch( Exception $e ){
+                echo $node->nid;
+                echo "<br>";
+                echo $node->title;
+                echo "<pre>";
+                print_r( $e );
+                echo "</pre>";
+                exit( );
+            }
+            
+        }
+        echo $i;
+        exit( );
+    }
+
+    /*
+     * http://wwwdev.uniandes.edu.co/?test=delete&offset=0
+     */
+
+    if( isset( $_GET[ "test" ] ) && $_GET[ "test" ] == "delete" ){
+
+        $offset = $_GET[ "offset" ];
+
+        $types = "noticias";
+        $result = db_query( "SELECT nid FROM dev_node WHERE type = :nodeType LIMIT 100 OFFSET " . $offset,  array(':nodeType' => $types));
+
+        $i=0;
+        foreach ($result as $objeto){
+
+            $i++;
+
+            $node = node_load( $objeto->nid );
+
+          try{
+              db_query("DELETE FROM dev_url_alias WHERE source = 'node/". $node->nid ."'");
+          }catch (Exception $e){
+              print_r($e->getMessage());
+              die();
+          }
+
+        }
+        echo $i;
+        exit( );
+    }
+    
+}
+

@@ -1,0 +1,468 @@
+.creditcard-form h3 {
+  font-family: 'Crimson_textroman', serif;
+  font-weight: normal;
+  font-size: 2rem;
+  padding: 25px 0;
+  margin: 0;
+}
+
+.creditcard-form h3:after {
+  content: '';
+  display: block;
+  height: 1px;
+  border-top: 1px solid #484851;
+  width: 100px;
+  margin: 5px 0;
+}
+
+.creditcard-form .form-item {
+  margin-bottom: 15px;
+  overflow: hidden;
+}
+
+@media only screen and (min-width: 550px) {
+  .creditcard-form .form-item {
+    float: left;
+    width: 50%;
+    padding: 0 10px;
+    margin: 0;
+    min-height: 60px;
+    position: relative;
+  }
+}
+
+.creditcard-form .form-item label {
+  display: none;
+}
+
+.creditcard-form .form-item .form-control {
+  border-radius: 0;
+  padding: 0 10px;
+}
+
+.creditcard-form .select_item-x2 select {
+  width: 49%;
+  float: left;
+  margin-right: 2%;
+}
+
+.creditcard-form .select_item-x2 select:last-child {
+  margin-right: 0;
+}
+
+.creditcard-form .select-ico select {
+  border-radius: 0;
+  background: url("../img/ico-select.png") no-repeat 95% #fff;
+  background-size: 15px;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  padding-right: 40px;
+}
+
+.creditcard-form .btn-content {
+  padding: 30px 0 0;
+  clear: both;
+}
+
+.creditcard-form .btn-content .btn-credit-card {
+  -webkit-appearance: none;
+  border-radius: 0;
+  border: 1px solid #006135;
+  background: transparent;
+  color: #484851;
+  margin: 0 auto;
+  display: block;
+}
+
+.creditcard-form .btn-content .btn-credit-card:hover {
+  background: #006135;
+  color: #fff;
+}
+
+.result_pse_donation {
+  font-size: 0.9rem;
+  font-family: 'Latolight';
+}
+
+@media only screen and (min-width: 767px) {
+  .result_pse_donation {
+    width: 750px;
+    margin: 0 auto;
+  }
+}
+
+.result_pse_donation .header_pse_donation {
+  background: #006135;
+  color: #fff;
+  display: table;
+  width: 100%;
+  padding: 15px;
+}
+
+@media only screen and (min-width: 550px) {
+  .result_pse_donation .header_pse_donation .logo_andes_donaciones {
+    width: 70%;
+    display: table-cell;
+    vertical-align: middle;
+  }
+}
+
+.result_pse_donation .header_pse_donation .logo_andes_donaciones figure {
+  display: inline-block;
+  width: 125px;
+}
+
+.result_pse_donation .header_pse_donation .logo_andes_donaciones figure.university_logo {
+  padding-right: 10px;
+}
+
+.result_pse_donation .header_pse_donation .logo_andes_donaciones figure.faculty-logo {
+  padding-left: 10px;
+  padding-top: 5px;
+  position: relative;
+  vertical-align: middle;
+  border-left: 1px solid #fff;
+}
+
+.result_pse_donation .header_pse_donation .cause_data {
+  width: 30%;
+  vertical-align: middle;
+  text-align: right;
+  display: none;
+}
+
+@media only screen and (min-width: 550px) {
+  .result_pse_donation .header_pse_donation .cause_data {
+    display: table-cell;
+  }
+}
+
+.result_pse_donation .header_pse_donation .cause_data .code_ticket {
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 10px 0;
+}
+
+.result_pse_donation .table_pse_donation {
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.result_pse_donation .table_pse_donation tr th {
+  border: 1px solid;
+  padding: 5px 15px;
+  font-family: 'Latobold';
+}
+
+.result_pse_donation .table_pse_donation tr td {
+  border: 1px solid;
+  padding: 5px 15px;
+}
+
+.result_pse_donation .footer_pse_donation {
+  padding: 15px 0;
+  border-top: 16px solid #006135;
+  margin-top: -1px;
+}
+
+.result_pse_donation .footer_pse_donation p {
+  font-size: 0.8rem;
+  padding: 2px 0;
+  line-height: 1.15;
+  text-align: center;
+  margin: 0;
+}
+
+@media only screen and (min-width: 550px) {
+  .result_pse_donation .footer_pse_donation p {
+    font-size: 0.9rem;
+  }
+}
+
+.result_pse_donation figure {
+  margin: 0;
+}
+
+.result_pse_donation figure img {
+  max-width: 100%;
+  height: auto;
+}
+
+.thank_u_page {
+  background: url("../img/thank_u_page.png") no-repeat center;
+  position: relative;
+  padding: 10% 0;
+  font-family: 'Latoregular', sans-serif;
+  line-height: 1.15;
+}
+
+.thank_u_page:before {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  content: '';
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.thank_u_page p {
+  color: #fff;
+  font-family: 'Latoregular', sans-serif;
+  line-height: 1.15;
+  font-size: 0.9rem;
+}
+
+.thank_u_page h1 {
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  font-family: 'Latobold', sans-serif;
+  color: #fff;
+}
+
+@media only screen and (min-width: 550px) {
+  .thank_u_page h1 {
+    font-size: 1.8rem;
+  }
+}
+
+.thank_u_page .block_thank_u_page {
+  width: 90%;
+  margin: 0 auto;
+  text-align: center;
+  border: 1px solid #fff;
+  padding: 10% 5%;
+  z-index: 15;
+  position: relative;
+}
+
+@media only screen and (min-width: 767px) {
+  .thank_u_page .block_thank_u_page {
+    width: 70%;
+    padding: 5% 2.5%;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .thank_u_page .block_thank_u_page {
+    width: 60%;
+  }
+}
+
+.thank_u_page .block_thank_u_page button.btn_default {
+  border: 1px solid #f4f1f1;
+  color: #484851;
+  background: #fff;
+  margin-top: 40px;
+  border-radius: 0;
+  padding: 8px 20px;
+}
+
+.thank_u_page .block_thank_u_page button.btn_default:hover {
+  background: #484851;
+  color: #fff;
+}
+
+/* Generated by Font Squirrel (https://www.fontsquirrel.com) on March 23, 2017 */
+@font-face {
+  font-family: 'Crimson_textbold';
+  src: url("../fonts/crimsontext-bold-webfont.woff2") format("woff2"), url("../fonts/crimsontext-bold-webfont.woff") format("woff");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Crimson_textroman';
+  src: url("../fonts/crimsontext-roman-webfont.woff2") format("woff2"), url("../fonts/crimsontext-roman-webfont.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Latobold';
+  src: url("../fonts/lato-bold-webfont.woff2") format("woff2"), url("../fonts/lato-bold-webfont.woff") format("woff");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Latolight';
+  src: url("../fonts/lato-light-webfont.woff2") format("woff2"), url("lato-light-webfont.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Latoregular';
+  src: url("../fonts/lato-regular-webfont.woff2") format("woff2"), url("../fonts/lato-regular-webfont.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+::-webkit-input-placeholder {
+  font-family: 'Latolight', sans-serif;
+  font-weight: 300;
+}
+
+::-moz-placeholder {
+  font-family: 'Latolight', sans-serif;
+  font-weight: 300;
+}
+
+:-ms-input-placeholder {
+  font-family: 'Latolight', sans-serif;
+  font-weight: 300;
+}
+
+input:-moz-placeholder {
+  font-family: 'Latolight', sans-serif;
+  font-weight: 300;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type=number]::-webkit-outer-spin-button {
+  -moz-appearance: textfield;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type=number]::-webkit-inner-spin-button {
+  -moz-appearance: textfield;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+form {
+  font-family: 'Lato', sans-serif;
+}
+
+form label.error {
+  color: #a94442;
+  text-align: left;
+  margin: 0;
+  font-weight: normal;
+  font-size: 0.75rem;
+  position: absolute;
+  bottom: 6px;
+  left: 10px;
+}
+
+/* Error formulario */
+.form-item.select-ico .form-control.error {
+  background: url("../img/ico-select-error.png") no-repeat 95% #fff;
+}
+
+.form-control.error {
+  border-color: #a94442;
+}
+
+/* Logos tarjeta de credito */
+.type-visa {
+  position: relative;
+}
+
+.type-visa:before {
+  content: "";
+  background: url("../img/logo_visa.svg") no-repeat center;
+  background-size: 100%;
+  height: 34px;
+  width: 50px;
+  display: block;
+  position: absolute;
+  right: 8%;
+}
+
+@media only screen and (min-width: 767px) {
+  .type-visa:before {
+    right: 5%;
+  }
+}
+
+.type-mastercard {
+  position: relative;
+}
+
+.type-mastercard:before {
+  content: "";
+  background: url("../img/logo_mastercard.svg") no-repeat center;
+  background-size: 100%;
+  height: 34px;
+  width: 50px;
+  display: block;
+  position: absolute;
+  right: 8%;
+}
+
+@media only screen and (min-width: 767px) {
+  .type-mastercard:before {
+    right: 5%;
+  }
+}
+
+.type-amex {
+  position: relative;
+}
+
+.type-amex:before {
+  content: "";
+  background: url("../img/logo_american_express.svg") no-repeat center;
+  background-size: 100%;
+  height: 34px;
+  width: 50px;
+  display: block;
+  position: absolute;
+  right: 8%;
+}
+
+@media only screen and (min-width: 767px) {
+  .type-amex:before {
+    right: 5%;
+  }
+}
+
+/*AG*/
+
+@media only screen and (max-width: 550px) {
+    form#creditcard-form .input-field.form-item {
+          position: relative;
+          margin-bottom: 25px;
+          overflow: initial;
+    }
+
+    form#creditcard-form .input-field.form-item label.error {
+          bottom: -17px;
+          left: initial;
+          font-size: 0.70rem;
+    }
+
+
+    form#creditcard-form.form-card .input-field.form-item select#cardmonth, 
+    form#creditcard-form.form-card .input-field.form-item select#cardyear {
+        position: relative;
+        margin-bottom: 25px;
+        z-index: 999;
+    }
+
+    form#creditcard-form.form-card .input-field.form-item .select_item-x2.select-ico label#expdate-error {
+        z-index: 99999;
+        left: 0;
+        top: 36px;
+    }
+}
+
+/*AG*/
